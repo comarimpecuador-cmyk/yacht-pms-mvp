@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String                   @id @default(uuid())
+  email                   String                   @unique
+  fullName                String
+  passwordHash            String
+  roleId                  String
+  role                    Role                     @relation(fields: [roleId], references: [id])
+  crewProfile             CrewProfile?
+  alertsAssigned          Alert[]                  @relation("AlertAssignee")
+  notificationPreference  NotificationPreference?
+  notificationEvents      NotificationEvent[]
+  logBookEntries          LogBookEntry[]           @relation("UserCreatedLogBooks")
+  yachtAccesses           UserYachtAccess[]
+  assignedDocuments       Document[]               @relation("DocumentAssignee")
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  users     User[]
+  createdAt DateTime @default(now())
+}
+
+model Yacht {
+  id                String              @id @default(uuid())
+  name              String
+  flag              String
+  imoOptional       String?
+  departments       Department[]
+  alerts            Alert[]
+  notificationPrefs NotificationPreference[]
+  notificationLogs  NotificationEvent[]
+  engines          Engine[]
+  logBookEntries   LogBookEntry[]
+  documents              Document[]
+  userAccesses     UserYachtAccess[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+model Department {
+  id        String        @id @default(uuid())
+  yachtId   String
+  yacht     Yacht         @relation(fields: [yachtId], references: [id])
+  name      String
+  crew      CrewProfile[]
+  createdAt DateTime      @default(now())
+}
+
+model CrewProfile {
+  id           String     @id @default(uuid())
+  userId       String     @unique
+  user         User       @relation(fields: [userId], references: [id])
+  rank         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  signOn       DateTime
+  signOff      DateTime?
+  createdAt    DateTime   @default(now())
+}
+
+model Alert {
+  id          String   @id @default(uuid())
+  yachtId     String
+  yacht       Yacht    @relation(fields: [yachtId], references: [id])
+  module      String
+  entityId    String?
+  alertType   String
+  severity    String
+  dueAt       DateTime?
+  dedupeKey   String   @unique
+  assignedTo  String?
+  assignee    User?    @relation("AlertAssignee", fields: [assignedTo], references: [id])
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model NotificationPreference {
+  id            String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  timezone       String   @default("UTC")
+  inAppEnabled   Boolean  @default(true)
+  emailEnabled   Boolean  @default(false)
+  pushFuture     Boolean  @default(false)
+  windowStart    String   @default("08:00")
+  windowEnd      String   @default("18:00")
+  minSeverity    String   @default("info")
+  yachtsScope    String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model NotificationEvent {
+  id         String   @id @default(uuid())
+  yachtId    String?
+  yacht      Yacht?   @relation(fields: [yachtId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  channel    String
+  type       String
+  payload    Json
+  status     String
+  dedupeKey  String
+  sentAt     DateTime?
+  readAt     DateTime?
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, status])
+  @@index([dedupeKey, channel, createdAt])
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  module     String
+  entityType String
+  entityId   String?
+  action     String
+  actorId    String
+  timestamp  DateTime @default(now())
+  beforeJson Json?
+  afterJson  Json?
+  source     String
+  ipDevice   String?
+}
+
+
+enum LogBookStatus {
+  Draft
+  Submitted
+  Locked
+  Corrected
+}
+
+model Engine {
+  id        String                @id @default(uuid())
+  yachtId   String
+  yacht     Yacht                 @relation(fields: [yachtId], references: [id])
+  name      String
+  type      String
+  serialNo  String
+  counters  EngineCounter[]
+  readings  LogBookEngineReading[]
+
+  @@index([yachtId])
+}
+
+model EngineCounter {
+  id              String    @id @default(uuid())
+  engineId         String
+  engine           Engine    @relation(fields: [engineId], references: [id])
+  readingHours     Float
+  readingDate      DateTime
+  sourceLogbookId  String?
+  sourceLogbook    LogBookEntry? @relation(fields: [sourceLogbookId], references: [id])
+
+  @@index([engineId, readingDate])
+}
+
+model LogBookEntry {
+  id             String                 @id @default(uuid())
+  yachtId         String
+  yacht           Yacht                  @relation(fields: [yachtId], references: [id])
+  entryDate       DateTime
+  watchPeriod     String
+  status          LogBookStatus          @default(Draft)
+  createdBy       String
+  creator         User                    @relation("UserCreatedLogBooks", fields: [createdBy], references: [id])
+  engineReadings  LogBookEngineReading[]
+  observations    LogBookObservation[]
+  counters        EngineCounter[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@unique([yachtId, entryDate])
+  @@index([yachtId, entryDate])
+}
+
+model LogBookEngineReading {
+  id        String       @id @default(uuid())
+  logbookId  String
+  logbook    LogBookEntry @relation(fields: [logbookId], references: [id])
+  engineId   String
+  engine     Engine       @relation(fields: [engineId], references: [id])
+  hours      Float
+
+  @@unique([logbookId, engineId])
+  @@index([logbookId])
+}
+
+model LogBookObservation {
+  id        String       @id @default(uuid())
+  logbookId  String
+  logbook    LogBookEntry @relation(fields: [logbookId], references: [id])
+  category  String
+  text      String
+
+  @@index([logbookId])
+}
+
+
+model UserYachtAccess {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  yachtId          String
+  yacht            Yacht    @relation(fields: [yachtId], references: [id])
+  roleNameOverride String?
+  createdAt        DateTime @default(now())
+
+  @@unique([userId, yachtId])
+  @@index([yachtId])
+}
+
+
+enum DocumentStatus {
+  Active
+  ExpiringSoon
+  Expired
+  RenewalInProgress
+  Renewed
+  Archived
+}
+
+model Document {
+  id               String         @id @default(uuid())
+  yachtId          String
+  yacht            Yacht          @relation(fields: [yachtId], references: [id])
+  docType          String
+  expiryDate       DateTime?
+  status           DocumentStatus @default(Active)
+  createdBy        String
+  assignedToUserId String?
+  assignedToUser   User?          @relation("DocumentAssignee", fields: [assignedToUserId], references: [id])
+  createdAt        DateTime       @default(now())
+  evidences        DocumentEvidence[]
+  renewals         DocumentRenewal[]
+
+  @@index([yachtId, expiryDate])
+}
+
+
+model DocumentRenewal {
+  id          String    @id @default(uuid())
+  documentId  String
+  document    Document  @relation(fields: [documentId], references: [id])
+  requestedAt DateTime  @default(now())
+  completedAt DateTime?
+  status      String
+  evidences   DocumentEvidence[]
+
+  @@index([documentId, status])
+}
+
+
+model DocumentEvidence {
+  id          String           @id @default(uuid())
+  documentId  String
+  document    Document         @relation(fields: [documentId], references: [id])
+  renewalId   String?
+  renewal     DocumentRenewal? @relation(fields: [renewalId], references: [id])
+  fileUrl     String
+  uploadedBy  String
+  uploadedAt  DateTime         @default(now())
+
+  @@index([documentId, uploadedAt])
+  @@index([renewalId])
+}

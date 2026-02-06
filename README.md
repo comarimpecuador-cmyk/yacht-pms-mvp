@@ -1,2 +1,5 @@
-# pms-yacht-platform
-SaaS PMS for yatch - architecture, daily flows, data model and future implementation
+# Yacht PMS MVP Monorepo
+
+Monorepo base para un sistema privado de operación diaria de yates.
+
+Consulta documentación de arranque en `docs/README.md`.
