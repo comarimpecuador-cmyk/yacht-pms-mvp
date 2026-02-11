@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Yacht PMS",
+    "slug": "yacht-pms-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "assetBundlePatterns": ["**/*"]
+  }
+}

@@ -1,0 +1,20 @@
+node_modules
+.pnpm-store
+
+# Do not commit any environment files (including examples)
+.env*
+
+.turbo/
+.next
+dist
+coverage
+.expo
+.DS_Store
+*.log
+apps/api/prisma/migrations
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios
+captain-token*.json
+cookies*.txt
+cookies*.json

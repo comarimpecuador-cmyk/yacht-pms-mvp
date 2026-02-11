@@ -1,2 +1,5 @@
 # yacht-pms-mvp
-SaaS PMS for yatch - architecture, daily flows, data model and future implementation
+
+Monorepo para un SaaS PMS de yates (MVP): arquitectura, flujos diarios y modelo de datos.
+
+Guía de arranque: `docs/README.md`.

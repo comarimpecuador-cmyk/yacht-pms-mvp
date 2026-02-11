@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yachtpms.local/schemas/logbook/v2/logbook-event.schema.json",
+  "title": "Yacht Logbook Event V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "yacht",
+    "chronology",
+    "classification",
+    "workflow",
+    "responsibility",
+    "details",
+    "audit"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "legacyRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "legacyEntryId": { "type": "string" },
+        "legacyObservationId": { "type": "string" },
+        "legacySource": { "type": "string", "enum": ["json", "csv", "database", "manual"] }
+      }
+    },
+    "yacht": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["yachtId", "name", "registrationNo", "yachtType", "homePort"],
+      "properties": {
+        "yachtId": { "type": "string", "format": "uuid" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "registrationNo": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "imo": { "type": "string", "maxLength": 40 },
+        "mmsi": { "type": "string", "maxLength": 40 },
+        "callsign": { "type": "string", "maxLength": 40 },
+        "yachtType": {
+          "type": "string",
+          "enum": ["motor_yacht", "sailing_yacht", "catamaran", "support_vessel", "other"]
+        },
+        "homePort": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "flag": { "type": "string", "maxLength": 80 }
+      }
+    },
+    "chronology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["occurredAt", "loggedAt", "timezone", "sequenceNo"],
+      "properties": {
+        "occurredAt": { "type": "string", "format": "date-time" },
+        "loggedAt": { "type": "string", "format": "date-time" },
+        "timezone": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "watchPeriod": {
+          "type": "string",
+          "enum": ["0000-0400", "0400-0800", "0800-1200", "1200-1600", "1600-2000", "2000-0000", "custom"]
+        },
+        "sequenceNo": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventType", "eventSubType", "severity", "category"],
+      "properties": {
+        "eventType": {
+          "type": "string",
+          "enum": ["entry", "exit", "service", "maintenance", "incident", "operation"]
+        },
+        "eventSubType": {
+          "type": "string",
+          "enum": [
+            "port_arrival",
+            "port_departure",
+            "guest_boarding",
+            "guest_disembark",
+            "charter_service",
+            "preventive_maintenance",
+            "corrective_maintenance",
+            "equipment_failure",
+            "safety_incident",
+            "medical_incident",
+            "security_incident",
+            "bridge_watch",
+            "engine_watch",
+            "navigation_note",
+            "housekeeping",
+            "other"
+          ]
+        },
+        "category": {
+          "type": "string",
+          "enum": ["nautical", "engineering", "guest_ops", "safety", "security", "admin"]
+        },
+        "severity": { "type": "string", "enum": ["info", "warn", "critical"] },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 40 },
+          "maxItems": 15
+        }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "approvalRequired"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["draft", "submitted", "approved", "rejected", "closed", "cancelled"]
+        },
+        "approvalRequired": { "type": "boolean" },
+        "approvalLevel": {
+          "type": "string",
+          "enum": ["none", "captain", "chief_engineer", "management_office", "system_admin"]
+        },
+        "statusReason": { "type": "string", "maxLength": 300 }
+      }
+    },
+    "responsibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reportedByUserId", "reportedByName"],
+      "properties": {
+        "reportedByUserId": { "type": "string", "format": "uuid" },
+        "reportedByName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "reportedByRole": { "type": "string", "maxLength": 80 },
+        "assignedToUserId": { "type": ["string", "null"], "format": "uuid" },
+        "approvedByUserId": { "type": ["string", "null"], "format": "uuid" },
+        "acknowledgedByUserIds": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" },
+          "maxItems": 30
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "latitude", "longitude"],
+      "properties": {
+        "source": { "type": "string", "enum": ["gps", "manual", "port_reference"] },
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "portName": { "type": "string", "maxLength": 120 },
+        "area": { "type": "string", "maxLength": 120 },
+        "countryCode": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "accuracyMeters": { "type": "number", "minimum": 0 }
+      }
+    },
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "description"],
+      "properties": {
+        "title": { "type": "string", "minLength": 4, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 8, "maxLength": 4000 },
+        "engineReadings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["engineId", "engineName", "hours"],
+            "properties": {
+              "engineId": { "type": "string", "format": "uuid" },
+              "engineName": { "type": "string", "minLength": 2, "maxLength": 120 },
+              "hours": { "type": "number", "minimum": 0 },
+              "rpm": { "type": "number", "minimum": 0 },
+              "temperatureC": { "type": "number", "minimum": -60, "maximum": 180 }
+            }
+          },
+          "maxItems": 20
+        },
+        "maintenanceRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "taskId": { "type": "string", "format": "uuid" },
+            "priority": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+            "dueDate": { "type": "string", "format": "date-time" }
+          }
+        },
+        "incidentRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "injuries": { "type": "integer", "minimum": 0 },
+            "pollutionRisk": { "type": "boolean" },
+            "reportableToAuthority": { "type": "boolean" }
+          }
+        },
+        "serviceRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "charterId": { "type": "string", "maxLength": 80 },
+            "guestCount": { "type": "integer", "minimum": 0 },
+            "serviceArea": { "type": "string", "maxLength": 120 }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["evidenceId", "fileUrl", "fileName", "mimeType", "uploadedAt", "uploadedByUserId"],
+        "properties": {
+          "evidenceId": { "type": "string", "format": "uuid" },
+          "fileUrl": { "type": "string", "format": "uri" },
+          "fileName": { "type": "string", "minLength": 3, "maxLength": 180 },
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "application/pdf",
+              "text/plain",
+              "video/mp4"
+            ]
+          },
+          "checksumSha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+          "uploadedAt": { "type": "string", "format": "date-time" },
+          "uploadedByUserId": { "type": "string", "format": "uuid" },
+          "caption": { "type": "string", "maxLength": 200 }
+        }
+      },
+      "maxItems": 30
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["createdAt", "createdByUserId", "updatedAt", "updatedByUserId", "changeHistory"],
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdByUserId": { "type": "string", "format": "uuid" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedByUserId": { "type": "string", "format": "uuid" },
+        "lastChangeReason": { "type": "string", "maxLength": 300 },
+        "changeHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["changedAt", "changedByUserId", "changeType", "reason"],
+            "properties": {
+              "changedAt": { "type": "string", "format": "date-time" },
+              "changedByUserId": { "type": "string", "format": "uuid" },
+              "changeType": { "type": "string", "enum": ["create", "update", "status_change", "approval", "delete"] },
+              "changedFields": {
+                "type": "array",
+                "items": { "type": "string", "maxLength": 80 },
+                "maxItems": 60
+              },
+              "reason": { "type": "string", "minLength": 3, "maxLength": 400 }
+            }
+          },
+          "maxItems": 300
+        }
+      }
+    }
+  }
+}

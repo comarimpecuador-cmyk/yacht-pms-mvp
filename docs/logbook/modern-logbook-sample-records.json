@@ -1,0 +1,892 @@
+[
+  {
+    "eventId": "4f8dce44-2b65-4e57-a74c-6fa6cb84cb55",
+    "legacyRefs": {
+      "legacyEntryId": "entry-2026-02-10-a",
+      "legacyObservationId": "obs-1",
+      "legacySource": "database"
+    },
+    "yacht": {
+      "yachtId": "e7c4b3ce-cea9-4127-bbe4-2d092de3cbff",
+      "name": "Demo Yacht",
+      "registrationNo": "EC-REG-2941",
+      "imo": "9830012",
+      "mmsi": "735001999",
+      "callsign": "HCXY2",
+      "yachtType": "motor_yacht",
+      "homePort": "Guayaquil",
+      "flag": "Ecuador"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-10T06:15:00Z",
+      "loggedAt": "2026-02-10T06:20:00Z",
+      "timezone": "America/Guayaquil",
+      "watchPeriod": "0400-0800",
+      "sequenceNo": 1
+    },
+    "classification": {
+      "eventType": "exit",
+      "eventSubType": "port_departure",
+      "category": "nautical",
+      "severity": "info",
+      "tags": [
+        "zarpe",
+        "autoridad_portuaria"
+      ]
+    },
+    "workflow": {
+      "status": "approved",
+      "approvalRequired": true,
+      "approvalLevel": "captain",
+      "statusReason": "Zarpe validado por capitan"
+    },
+    "responsibility": {
+      "reportedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "reportedByName": "Carlos Mena",
+      "reportedByRole": "Captain",
+      "assignedToUserId": null,
+      "approvedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "acknowledgedByUserIds": []
+    },
+    "location": {
+      "source": "port_reference",
+      "latitude": -2.2762,
+      "longitude": -79.8862,
+      "portName": "Puerto Maritimo de Guayaquil",
+      "area": "Canal de salida",
+      "countryCode": "EC",
+      "accuracyMeters": 150
+    },
+    "details": {
+      "title": "Salida de puerto programada",
+      "description": "Se realiza salida con condiciones meteorologicas dentro de rango y checklist completado.",
+      "serviceRef": {
+        "charterId": "CH-2026-0210-01",
+        "guestCount": 8,
+        "serviceArea": "Ruta costera sur"
+      }
+    },
+    "evidence": [
+      {
+        "evidenceId": "9e8bd5b4-a4c9-4ae5-ac9c-12d0ef1ab7dc",
+        "fileUrl": "https://files.yachtpms.local/logbook/2026/02/10/departure-01.jpg",
+        "fileName": "departure-01.jpg",
+        "mimeType": "image/jpeg",
+        "checksumSha256": "32db139685fd95debbf6f1b4207f8f31fa7f8f16a44c4ee32d3f5a1f0d3c22c0",
+        "uploadedAt": "2026-02-10T06:22:00Z",
+        "uploadedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+        "caption": "Maniobra de salida"
+      }
+    ],
+    "audit": {
+      "createdAt": "2026-02-10T06:20:00Z",
+      "createdByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "updatedAt": "2026-02-10T06:30:00Z",
+      "updatedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "lastChangeReason": "Cierre de evento",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-10T06:20:00Z",
+          "changedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+          "changeType": "create",
+          "changedFields": [
+            "details",
+            "classification",
+            "location"
+          ],
+          "reason": "Registro inicial de zarpe"
+        },
+        {
+          "changedAt": "2026-02-10T06:30:00Z",
+          "changedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+          "changeType": "approval",
+          "changedFields": [
+            "workflow.status"
+          ],
+          "reason": "Validacion final capitan"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "ccf97a2c-0aa1-4da9-bf2a-9db8af8f06cd",
+    "yacht": {
+      "yachtId": "e7c4b3ce-cea9-4127-bbe4-2d092de3cbff",
+      "name": "Demo Yacht",
+      "registrationNo": "EC-REG-2941",
+      "yachtType": "motor_yacht",
+      "homePort": "Guayaquil"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-10T09:00:00Z",
+      "loggedAt": "2026-02-10T09:05:00Z",
+      "timezone": "America/Guayaquil",
+      "watchPeriod": "0800-1200",
+      "sequenceNo": 2
+    },
+    "classification": {
+      "eventType": "service",
+      "eventSubType": "guest_boarding",
+      "category": "guest_ops",
+      "severity": "info",
+      "tags": [
+        "charter",
+        "hospitalidad"
+      ]
+    },
+    "workflow": {
+      "status": "closed",
+      "approvalRequired": false,
+      "approvalLevel": "none",
+      "statusReason": "Proceso completado"
+    },
+    "responsibility": {
+      "reportedByUserId": "7a5de0c1-9b67-4f30-9711-0b8ea1735310",
+      "reportedByName": "Ana Ruiz",
+      "reportedByRole": "Purser",
+      "assignedToUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+      "approvedByUserId": null,
+      "acknowledgedByUserIds": [
+        "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11"
+      ]
+    },
+    "location": {
+      "source": "gps",
+      "latitude": -2.2702,
+      "longitude": -79.9001,
+      "area": "Muelle turistico",
+      "countryCode": "EC",
+      "accuracyMeters": 9
+    },
+    "details": {
+      "title": "Embarque de huespedes",
+      "description": "Se completa embarque de 8 pasajeros y equipaje con verificacion de lista.",
+      "serviceRef": {
+        "charterId": "CH-2026-0210-01",
+        "guestCount": 8,
+        "serviceArea": "Muelle turistico"
+      }
+    },
+    "audit": {
+      "createdAt": "2026-02-10T09:05:00Z",
+      "createdByUserId": "7a5de0c1-9b67-4f30-9711-0b8ea1735310",
+      "updatedAt": "2026-02-10T09:10:00Z",
+      "updatedByUserId": "7a5de0c1-9b67-4f30-9711-0b8ea1735310",
+      "lastChangeReason": "Registro final",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-10T09:05:00Z",
+          "changedByUserId": "7a5de0c1-9b67-4f30-9711-0b8ea1735310",
+          "changeType": "create",
+          "changedFields": [
+            "details",
+            "responsibility"
+          ],
+          "reason": "Alta de evento de servicio"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "c554ad96-c89f-4f8c-8a1a-cd8a671f2b12",
+    "yacht": {
+      "yachtId": "e7c4b3ce-cea9-4127-bbe4-2d092de3cbff",
+      "name": "Demo Yacht",
+      "registrationNo": "EC-REG-2941",
+      "yachtType": "motor_yacht",
+      "homePort": "Guayaquil"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-10T11:15:00Z",
+      "loggedAt": "2026-02-10T11:20:00Z",
+      "timezone": "America/Guayaquil",
+      "watchPeriod": "0800-1200",
+      "sequenceNo": 3
+    },
+    "classification": {
+      "eventType": "maintenance",
+      "eventSubType": "preventive_maintenance",
+      "category": "engineering",
+      "severity": "warn",
+      "tags": [
+        "engine_room",
+        "filtro_combustible"
+      ]
+    },
+    "workflow": {
+      "status": "submitted",
+      "approvalRequired": true,
+      "approvalLevel": "chief_engineer",
+      "statusReason": "Pendiente aprobacion"
+    },
+    "responsibility": {
+      "reportedByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+      "reportedByName": "Miguel Paredes",
+      "reportedByRole": "Chief Engineer",
+      "assignedToUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+      "approvedByUserId": null,
+      "acknowledgedByUserIds": []
+    },
+    "location": {
+      "source": "manual",
+      "latitude": -2.265,
+      "longitude": -79.9043,
+      "area": "Sala de maquinas",
+      "countryCode": "EC",
+      "accuracyMeters": 50
+    },
+    "details": {
+      "title": "Cambio preventivo de filtro primario",
+      "description": "Se detecta caida ligera de presion y se ejecuta mantenimiento preventivo del filtro principal.",
+      "engineReadings": [
+        {
+          "engineId": "3a5ca3e7-c3cd-4d0e-a469-0de0ba7f0de2",
+          "engineName": "Main Engine",
+          "hours": 1542.3,
+          "rpm": 1120,
+          "temperatureC": 78.4
+        }
+      ],
+      "maintenanceRef": {
+        "taskId": "bb762313-0ac4-42df-935f-f4694ee3b8e1",
+        "priority": "Medium",
+        "dueDate": "2026-02-11T18:00:00Z"
+      }
+    },
+    "audit": {
+      "createdAt": "2026-02-10T11:20:00Z",
+      "createdByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+      "updatedAt": "2026-02-10T11:22:00Z",
+      "updatedByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+      "lastChangeReason": "Enviado a validacion",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-10T11:20:00Z",
+          "changedByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+          "changeType": "create",
+          "changedFields": [
+            "details",
+            "classification",
+            "engineReadings"
+          ],
+          "reason": "Registro de mantenimiento"
+        },
+        {
+          "changedAt": "2026-02-10T11:22:00Z",
+          "changedByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+          "changeType": "status_change",
+          "changedFields": [
+            "workflow.status"
+          ],
+          "reason": "Cambio a submitted"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "d2ca8d7f-ef46-4ab8-aea6-a96c816e9f53",
+    "yacht": {
+      "yachtId": "e7c4b3ce-cea9-4127-bbe4-2d092de3cbff",
+      "name": "Demo Yacht",
+      "registrationNo": "EC-REG-2941",
+      "yachtType": "motor_yacht",
+      "homePort": "Guayaquil"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-10T13:40:00Z",
+      "loggedAt": "2026-02-10T13:45:00Z",
+      "timezone": "America/Guayaquil",
+      "watchPeriod": "1200-1600",
+      "sequenceNo": 4
+    },
+    "classification": {
+      "eventType": "incident",
+      "eventSubType": "equipment_failure",
+      "category": "engineering",
+      "severity": "critical",
+      "tags": [
+        "alarma",
+        "aceite",
+        "motor_auxiliar"
+      ]
+    },
+    "workflow": {
+      "status": "approved",
+      "approvalRequired": true,
+      "approvalLevel": "captain",
+      "statusReason": "Incidente clasificado y tratado"
+    },
+    "responsibility": {
+      "reportedByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+      "reportedByName": "Miguel Paredes",
+      "reportedByRole": "Chief Engineer",
+      "assignedToUserId": "7a5de0c1-9b67-4f30-9711-0b8ea1735310",
+      "approvedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "acknowledgedByUserIds": [
+        "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25"
+      ]
+    },
+    "location": {
+      "source": "gps",
+      "latitude": -2.2249,
+      "longitude": -80.0051,
+      "area": "Navegacion costera",
+      "countryCode": "EC",
+      "accuracyMeters": 11
+    },
+    "details": {
+      "title": "Alarma por baja presion de aceite",
+      "description": "Se activa alarma en motor auxiliar. Se reduce carga y se ejecuta inspeccion inmediata.",
+      "incidentRef": {
+        "injuries": 0,
+        "pollutionRisk": false,
+        "reportableToAuthority": false
+      },
+      "maintenanceRef": {
+        "taskId": "ac5c9eb7-3665-4ead-a4b1-35a32f1c5aa4",
+        "priority": "Critical",
+        "dueDate": "2026-02-10T16:00:00Z"
+      }
+    },
+    "evidence": [
+      {
+        "evidenceId": "ab30e284-c0d7-46f1-bd62-8ea04f96dc4a",
+        "fileUrl": "https://files.yachtpms.local/logbook/2026/02/10/oil-alarm.pdf",
+        "fileName": "oil-alarm-report.pdf",
+        "mimeType": "application/pdf",
+        "checksumSha256": "8715adf1a14f91ffca7ce60790d4902fd217369f8306db185d8ede4f87dcf531",
+        "uploadedAt": "2026-02-10T13:55:00Z",
+        "uploadedByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+        "caption": "Reporte de alarma"
+      }
+    ],
+    "audit": {
+      "createdAt": "2026-02-10T13:45:00Z",
+      "createdByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+      "updatedAt": "2026-02-10T14:10:00Z",
+      "updatedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "lastChangeReason": "Incidente cerrado por capitan",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-10T13:45:00Z",
+          "changedByUserId": "ec49c366-f0f1-4e2c-b6d5-0c2ea321bb11",
+          "changeType": "create",
+          "changedFields": [
+            "classification",
+            "details"
+          ],
+          "reason": "Alta de incidente"
+        },
+        {
+          "changedAt": "2026-02-10T14:10:00Z",
+          "changedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+          "changeType": "approval",
+          "changedFields": [
+            "workflow.status",
+            "workflow.statusReason"
+          ],
+          "reason": "Validacion y cierre operacional"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "b0f54da1-0bc8-4a07-8608-f8d4d7b26f20",
+    "yacht": {
+      "yachtId": "e7c4b3ce-cea9-4127-bbe4-2d092de3cbff",
+      "name": "Demo Yacht",
+      "registrationNo": "EC-REG-2941",
+      "yachtType": "motor_yacht",
+      "homePort": "Guayaquil"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-10T17:30:00Z",
+      "loggedAt": "2026-02-10T17:40:00Z",
+      "timezone": "America/Guayaquil",
+      "watchPeriod": "1600-2000",
+      "sequenceNo": 5
+    },
+    "classification": {
+      "eventType": "entry",
+      "eventSubType": "port_arrival",
+      "category": "nautical",
+      "severity": "info",
+      "tags": [
+        "arribo",
+        "muelle"
+      ]
+    },
+    "workflow": {
+      "status": "closed",
+      "approvalRequired": true,
+      "approvalLevel": "captain",
+      "statusReason": "Arribo confirmado"
+    },
+    "responsibility": {
+      "reportedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "reportedByName": "Carlos Mena",
+      "reportedByRole": "Captain",
+      "assignedToUserId": null,
+      "approvedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "acknowledgedByUserIds": []
+    },
+    "location": {
+      "source": "port_reference",
+      "latitude": -2.235,
+      "longitude": -79.8865,
+      "portName": "Puerto de Posorja",
+      "area": "Zona de atraque 3",
+      "countryCode": "EC",
+      "accuracyMeters": 120
+    },
+    "details": {
+      "title": "Arribo sin novedades",
+      "description": "El yate completa la llegada y amarre sin incidentes ni desviaciones de plan.",
+      "engineReadings": [
+        {
+          "engineId": "3a5ca3e7-c3cd-4d0e-a469-0de0ba7f0de2",
+          "engineName": "Main Engine",
+          "hours": 1548.7
+        }
+      ]
+    },
+    "audit": {
+      "createdAt": "2026-02-10T17:40:00Z",
+      "createdByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "updatedAt": "2026-02-10T17:45:00Z",
+      "updatedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+      "lastChangeReason": "Confirmacion de amarre",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-10T17:40:00Z",
+          "changedByUserId": "b1a2c5df-8c1e-4d18-8dcf-9f6a8c078d25",
+          "changeType": "create",
+          "changedFields": [
+            "location",
+            "details"
+          ],
+          "reason": "Registro de arribo"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "f8f7742d-4e6b-47eb-8bb0-a99c22f6cdf3",
+    "yacht": {
+      "yachtId": "b5fdcc2a-a251-4b05-b5a1-8158f8248ed3",
+      "name": "Silvestre Stalone",
+      "registrationNo": "PA-REG-1120",
+      "imo": "9771234",
+      "yachtType": "motor_yacht",
+      "homePort": "Panama City"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-08T05:55:00Z",
+      "loggedAt": "2026-02-08T06:01:00Z",
+      "timezone": "America/Panama",
+      "watchPeriod": "0400-0800",
+      "sequenceNo": 1
+    },
+    "classification": {
+      "eventType": "operation",
+      "eventSubType": "bridge_watch",
+      "category": "nautical",
+      "severity": "info",
+      "tags": [
+        "guardia",
+        "navegacion"
+      ]
+    },
+    "workflow": {
+      "status": "closed",
+      "approvalRequired": false,
+      "approvalLevel": "none",
+      "statusReason": "Guardia completada"
+    },
+    "responsibility": {
+      "reportedByUserId": "dc70b9c2-3260-490f-b19b-6f70002bc765",
+      "reportedByName": "Jorge Prado",
+      "reportedByRole": "Officer of the Watch",
+      "assignedToUserId": null,
+      "approvedByUserId": null,
+      "acknowledgedByUserIds": []
+    },
+    "location": {
+      "source": "gps",
+      "latitude": 8.918,
+      "longitude": -79.5177,
+      "area": "Canal approach",
+      "countryCode": "PA",
+      "accuracyMeters": 7
+    },
+    "details": {
+      "title": "Guardia de puente normal",
+      "description": "Navegacion estable, trafico moderado y visibilidad buena durante la guardia.",
+      "engineReadings": [
+        {
+          "engineId": "fb42a68a-320b-4cad-89b8-72a6b244f1de",
+          "engineName": "Main Port Engine",
+          "hours": 3201.1,
+          "rpm": 980
+        }
+      ]
+    },
+    "audit": {
+      "createdAt": "2026-02-08T06:01:00Z",
+      "createdByUserId": "dc70b9c2-3260-490f-b19b-6f70002bc765",
+      "updatedAt": "2026-02-08T06:01:00Z",
+      "updatedByUserId": "dc70b9c2-3260-490f-b19b-6f70002bc765",
+      "lastChangeReason": "Registro de rutina",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-08T06:01:00Z",
+          "changedByUserId": "dc70b9c2-3260-490f-b19b-6f70002bc765",
+          "changeType": "create",
+          "changedFields": [
+            "details"
+          ],
+          "reason": "Alta de guardia"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "fb62ad37-b265-449b-b14d-1df6124444fa",
+    "yacht": {
+      "yachtId": "b5fdcc2a-a251-4b05-b5a1-8158f8248ed3",
+      "name": "Silvestre Stalone",
+      "registrationNo": "PA-REG-1120",
+      "yachtType": "motor_yacht",
+      "homePort": "Panama City"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-08T10:30:00Z",
+      "loggedAt": "2026-02-08T10:32:00Z",
+      "timezone": "America/Panama",
+      "watchPeriod": "0800-1200",
+      "sequenceNo": 2
+    },
+    "classification": {
+      "eventType": "maintenance",
+      "eventSubType": "corrective_maintenance",
+      "category": "engineering",
+      "severity": "warn",
+      "tags": [
+        "bomba",
+        "agua_dulce"
+      ]
+    },
+    "workflow": {
+      "status": "approved",
+      "approvalRequired": true,
+      "approvalLevel": "chief_engineer",
+      "statusReason": "Correccion ejecutada"
+    },
+    "responsibility": {
+      "reportedByUserId": "2f5b15f3-8c3c-4fe4-a0d3-3b97f0a88d59",
+      "reportedByName": "Luis Cevallos",
+      "reportedByRole": "Engineer",
+      "assignedToUserId": "2f5b15f3-8c3c-4fe4-a0d3-3b97f0a88d59",
+      "approvedByUserId": "3dd4a230-0a6b-4f58-8fa8-5ec55446b6f5",
+      "acknowledgedByUserIds": []
+    },
+    "location": {
+      "source": "manual",
+      "latitude": 8.909,
+      "longitude": -79.53,
+      "area": "Sala de maquinas",
+      "countryCode": "PA",
+      "accuracyMeters": 40
+    },
+    "details": {
+      "title": "Reemplazo de sello en bomba",
+      "description": "Se corrige fuga menor en bomba de agua dulce, se prueba y queda operativa.",
+      "maintenanceRef": {
+        "taskId": "7e41f275-0434-4f95-9d0a-7868bd3a3fca",
+        "priority": "High",
+        "dueDate": "2026-02-08T12:00:00Z"
+      }
+    },
+    "audit": {
+      "createdAt": "2026-02-08T10:32:00Z",
+      "createdByUserId": "2f5b15f3-8c3c-4fe4-a0d3-3b97f0a88d59",
+      "updatedAt": "2026-02-08T11:10:00Z",
+      "updatedByUserId": "3dd4a230-0a6b-4f58-8fa8-5ec55446b6f5",
+      "lastChangeReason": "Aprobacion tecnica",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-08T10:32:00Z",
+          "changedByUserId": "2f5b15f3-8c3c-4fe4-a0d3-3b97f0a88d59",
+          "changeType": "create",
+          "changedFields": [
+            "details",
+            "classification"
+          ],
+          "reason": "Alta de tarea correctiva"
+        },
+        {
+          "changedAt": "2026-02-08T11:10:00Z",
+          "changedByUserId": "3dd4a230-0a6b-4f58-8fa8-5ec55446b6f5",
+          "changeType": "approval",
+          "changedFields": [
+            "workflow.status"
+          ],
+          "reason": "Trabajo verificado"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "9cdf53ca-c549-4765-ae4d-2a21f72895bb",
+    "yacht": {
+      "yachtId": "b5fdcc2a-a251-4b05-b5a1-8158f8248ed3",
+      "name": "Silvestre Stalone",
+      "registrationNo": "PA-REG-1120",
+      "yachtType": "motor_yacht",
+      "homePort": "Panama City"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-08T14:05:00Z",
+      "loggedAt": "2026-02-08T14:11:00Z",
+      "timezone": "America/Panama",
+      "watchPeriod": "1200-1600",
+      "sequenceNo": 3
+    },
+    "classification": {
+      "eventType": "service",
+      "eventSubType": "charter_service",
+      "category": "guest_ops",
+      "severity": "info",
+      "tags": [
+        "almuerzo",
+        "cubierta_principal"
+      ]
+    },
+    "workflow": {
+      "status": "closed",
+      "approvalRequired": false,
+      "approvalLevel": "none",
+      "statusReason": "Servicio completado"
+    },
+    "responsibility": {
+      "reportedByUserId": "75bc8f88-a2d2-4ee6-b31d-c7d321728065",
+      "reportedByName": "Maria Del Rio",
+      "reportedByRole": "Chief Steward",
+      "assignedToUserId": "75bc8f88-a2d2-4ee6-b31d-c7d321728065",
+      "approvedByUserId": null,
+      "acknowledgedByUserIds": []
+    },
+    "location": {
+      "source": "gps",
+      "latitude": 8.9262,
+      "longitude": -79.5108,
+      "area": "Fondeo Bahia",
+      "countryCode": "PA",
+      "accuracyMeters": 8
+    },
+    "details": {
+      "title": "Servicio de almuerzo charter",
+      "description": "Se ejecuta servicio principal para 12 huespedes en cubierta con menu aprobado.",
+      "serviceRef": {
+        "charterId": "CH-2026-0208-77",
+        "guestCount": 12,
+        "serviceArea": "Cubierta principal"
+      }
+    },
+    "audit": {
+      "createdAt": "2026-02-08T14:11:00Z",
+      "createdByUserId": "75bc8f88-a2d2-4ee6-b31d-c7d321728065",
+      "updatedAt": "2026-02-08T14:11:00Z",
+      "updatedByUserId": "75bc8f88-a2d2-4ee6-b31d-c7d321728065",
+      "lastChangeReason": "Evento finalizado",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-08T14:11:00Z",
+          "changedByUserId": "75bc8f88-a2d2-4ee6-b31d-c7d321728065",
+          "changeType": "create",
+          "changedFields": [
+            "details",
+            "classification"
+          ],
+          "reason": "Registro de servicio"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "7f056849-72db-4eba-b73d-18ec5f8762dc",
+    "yacht": {
+      "yachtId": "b5fdcc2a-a251-4b05-b5a1-8158f8248ed3",
+      "name": "Silvestre Stalone",
+      "registrationNo": "PA-REG-1120",
+      "yachtType": "motor_yacht",
+      "homePort": "Panama City"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-08T19:20:00Z",
+      "loggedAt": "2026-02-08T19:24:00Z",
+      "timezone": "America/Panama",
+      "watchPeriod": "1600-2000",
+      "sequenceNo": 4
+    },
+    "classification": {
+      "eventType": "incident",
+      "eventSubType": "medical_incident",
+      "category": "safety",
+      "severity": "warn",
+      "tags": [
+        "tripulacion",
+        "primeros_auxilios"
+      ]
+    },
+    "workflow": {
+      "status": "closed",
+      "approvalRequired": true,
+      "approvalLevel": "captain",
+      "statusReason": "Atencion completada sin evacuacion"
+    },
+    "responsibility": {
+      "reportedByUserId": "dc70b9c2-3260-490f-b19b-6f70002bc765",
+      "reportedByName": "Jorge Prado",
+      "reportedByRole": "Officer of the Watch",
+      "assignedToUserId": "ff04bf5d-f09f-4ec8-b783-d8d350cfb7fd",
+      "approvedByUserId": "640bad4c-3dc8-4f7c-9e89-9cd36fa9b2fa",
+      "acknowledgedByUserIds": [
+        "ff04bf5d-f09f-4ec8-b783-d8d350cfb7fd"
+      ]
+    },
+    "location": {
+      "source": "manual",
+      "latitude": 8.9254,
+      "longitude": -79.5136,
+      "area": "Cubierta popa",
+      "countryCode": "PA",
+      "accuracyMeters": 30
+    },
+    "details": {
+      "title": "Corte menor en mano de marinero",
+      "description": "Se aplica protocolo de primeros auxilios. No se requiere traslado medico.",
+      "incidentRef": {
+        "injuries": 1,
+        "pollutionRisk": false,
+        "reportableToAuthority": false
+      }
+    },
+    "audit": {
+      "createdAt": "2026-02-08T19:24:00Z",
+      "createdByUserId": "dc70b9c2-3260-490f-b19b-6f70002bc765",
+      "updatedAt": "2026-02-08T19:40:00Z",
+      "updatedByUserId": "640bad4c-3dc8-4f7c-9e89-9cd36fa9b2fa",
+      "lastChangeReason": "Cierre por capitan",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-08T19:24:00Z",
+          "changedByUserId": "dc70b9c2-3260-490f-b19b-6f70002bc765",
+          "changeType": "create",
+          "changedFields": [
+            "details",
+            "classification",
+            "responsibility.assignedToUserId"
+          ],
+          "reason": "Registro de incidente medico"
+        },
+        {
+          "changedAt": "2026-02-08T19:40:00Z",
+          "changedByUserId": "640bad4c-3dc8-4f7c-9e89-9cd36fa9b2fa",
+          "changeType": "status_change",
+          "changedFields": [
+            "workflow.status"
+          ],
+          "reason": "Incidente controlado"
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "c8f0a0b8-4669-4565-a68a-4f82e54af95c",
+    "yacht": {
+      "yachtId": "b5fdcc2a-a251-4b05-b5a1-8158f8248ed3",
+      "name": "Silvestre Stalone",
+      "registrationNo": "PA-REG-1120",
+      "yachtType": "motor_yacht",
+      "homePort": "Panama City"
+    },
+    "chronology": {
+      "occurredAt": "2026-02-09T00:40:00Z",
+      "loggedAt": "2026-02-09T00:43:00Z",
+      "timezone": "America/Panama",
+      "watchPeriod": "2000-0000",
+      "sequenceNo": 5
+    },
+    "classification": {
+      "eventType": "operation",
+      "eventSubType": "engine_watch",
+      "category": "engineering",
+      "severity": "info",
+      "tags": [
+        "consumo",
+        "guardia_maquinas"
+      ]
+    },
+    "workflow": {
+      "status": "closed",
+      "approvalRequired": false,
+      "approvalLevel": "none",
+      "statusReason": "Lectura registrada"
+    },
+    "responsibility": {
+      "reportedByUserId": "2f5b15f3-8c3c-4fe4-a0d3-3b97f0a88d59",
+      "reportedByName": "Luis Cevallos",
+      "reportedByRole": "Engineer",
+      "assignedToUserId": null,
+      "approvedByUserId": null,
+      "acknowledgedByUserIds": []
+    },
+    "location": {
+      "source": "gps",
+      "latitude": 8.9322,
+      "longitude": -79.5059,
+      "area": "Canal approach",
+      "countryCode": "PA",
+      "accuracyMeters": 6
+    },
+    "details": {
+      "title": "Lectura de horas y consumo",
+      "description": "Se registran horas de motores y parametros de temperatura dentro de limites.",
+      "engineReadings": [
+        {
+          "engineId": "fb42a68a-320b-4cad-89b8-72a6b244f1de",
+          "engineName": "Main Port Engine",
+          "hours": 3209.4,
+          "rpm": 1050,
+          "temperatureC": 80.1
+        },
+        {
+          "engineId": "ba4cfad8-21d8-4cde-90b9-a7009fdb5dd8",
+          "engineName": "Main Starboard Engine",
+          "hours": 3208.7,
+          "rpm": 1048,
+          "temperatureC": 79.9
+        }
+      ]
+    },
+    "audit": {
+      "createdAt": "2026-02-09T00:43:00Z",
+      "createdByUserId": "2f5b15f3-8c3c-4fe4-a0d3-3b97f0a88d59",
+      "updatedAt": "2026-02-09T00:43:00Z",
+      "updatedByUserId": "2f5b15f3-8c3c-4fe4-a0d3-3b97f0a88d59",
+      "lastChangeReason": "Cierre automatico",
+      "changeHistory": [
+        {
+          "changedAt": "2026-02-09T00:43:00Z",
+          "changedByUserId": "2f5b15f3-8c3c-4fe4-a0d3-3b97f0a88d59",
+          "changeType": "create",
+          "changedFields": [
+            "details.engineReadings"
+          ],
+          "reason": "Registro de guardia de maquinas"
+        }
+      ]
+    }
+  }
+]

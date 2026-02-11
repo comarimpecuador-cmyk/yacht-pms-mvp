@@ -1,0 +1,16 @@
+{
+  "name": "yacht-pms-mvp",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/passport-jwt": "^4.0.1",
+    "prettier": "^3.3.3",
+    "turbo": "^2.1.3"
+  }
+}
