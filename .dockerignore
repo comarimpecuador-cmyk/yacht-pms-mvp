@@ -1,0 +1,14 @@
+.git
+.github
+.turbo
+.next
+dist
+coverage
+node_modules
+**/node_modules
+*.log
+*.tmp
+*.swp
+.env*
+apps/mobile
+apps/api/storage/uploads

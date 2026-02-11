@@ -6,6 +6,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
+    "start:prod": "node dist/main.js",
     "lint": "eslint src --ext .ts",
     "prisma:generate": "prisma generate",
     "logbook:v2:backfill": "ts-node ./prisma/backfill-logbook-v2.ts"

@@ -1,0 +1,78 @@
+services:
+  pms-db:
+    image: postgres:16-alpine
+    container_name: pms-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: same
+      POSTGRES_PASSWORD: same
+      POSTGRES_DB: same
+    volumes:
+      - pms-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U same -d same"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  pms-redis:
+    image: redis:7-alpine
+    container_name: pms-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - pms-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  pms-api:
+    container_name: pms-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    env_file:
+      - ./apps/api/.env.production
+    depends_on:
+      pms-db:
+        condition: service_healthy
+      pms-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3011:3001"
+    volumes:
+      - pms-api-uploads:/app/apps/api/storage/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/api/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  pms-web:
+    container_name: pms-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    env_file:
+      - ./apps/web/.env.production
+    depends_on:
+      pms-api:
+        condition: service_started
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3010:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pms-db-data:
+  pms-redis-data:
+  pms-api-uploads:

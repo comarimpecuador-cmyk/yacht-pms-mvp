@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useYacht } from '@/lib/yacht-context';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '');
+const rawApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_URL = (rawApiBaseUrl === undefined ? 'http://localhost:3001' : rawApiBaseUrl).replace(/\/$/, '');
 
 type DocumentStatus =
   | 'Active'
