@@ -4,13 +4,13 @@ services:
     container_name: pms-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: same
-      POSTGRES_PASSWORD: same
-      POSTGRES_DB: same
+      POSTGRES_USER: yachtpms
+      POSTGRES_PASSWORD: yachtpms
+      POSTGRES_DB: yachtpms
     volumes:
       - pms-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U same -d same"]
+      test: ["CMD-SHELL", "pg_isready -U yachtpms -d yachtpms"]
       interval: 10s
       timeout: 5s
       retries: 10
