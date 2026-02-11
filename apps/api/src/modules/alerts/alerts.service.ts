@@ -41,4 +41,11 @@ export class AlertsService {
       orderBy: [{ dueAt: 'asc' }, { createdAt: 'desc' }],
     });
   }
+
+  async resolveByDedupeKey(dedupeKey: string) {
+    return this.prisma.alert.updateMany({
+      where: { dedupeKey, resolvedAt: null },
+      data: { resolvedAt: new Date() },
+    });
+  }
 }

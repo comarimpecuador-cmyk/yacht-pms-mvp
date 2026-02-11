@@ -1,8 +1,10 @@
 node_modules
 .pnpm-store
-.env
-.env.local
-.env.*.local
+
+# Do not commit any environment files (including examples)
+.env*
+
+.turbo/
 .next
 dist
 coverage
@@ -13,3 +15,6 @@ apps/api/prisma/migrations
 apps/mobile/.expo
 apps/mobile/android
 apps/mobile/ios
+captain-token*.json
+cookies*.txt
+cookies*.json

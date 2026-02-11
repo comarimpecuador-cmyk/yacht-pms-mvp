@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+﻿import { BadRequestException, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
 import { YACHT_SCOPE_KEY } from '../decorators/yacht-scope.decorator';
@@ -22,10 +22,12 @@ export class YachtScopeGuard implements CanActivate {
     const userId: string | undefined = request.user?.userId;
     const role: string | undefined = request.user?.role;
 
-    if (!yachtId) return true;
+    if (!yachtId) {
+      throw new BadRequestException('yachtId is required for this endpoint');
+    }
     if (!userId || !role) return false;
 
-    if (role === 'Admin' || role === 'Management/Office') {
+    if (role === 'SystemAdmin') {
       return true;
     }
 
@@ -36,8 +38,9 @@ export class YachtScopeGuard implements CanActivate {
           yachtId: String(yachtId),
         },
       },
+      select: { id: true, revokedAt: true },
     });
 
-    return Boolean(access);
+    return Boolean(access && !access.revokedAt);
   }
 }

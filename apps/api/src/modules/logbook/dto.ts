@@ -84,3 +84,17 @@ export class CreateEngineDto {
   @IsString()
   serialNo!: string;
 }
+
+export class UpdateEngineDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  serialNo?: string;
+}

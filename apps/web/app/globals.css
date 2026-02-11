@@ -2,6 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-slate-50 text-slate-900;
+@layer base {
+  :root {
+    --color-background: 248 250 252;
+    --color-surface: 241 245 249;
+    --color-surface-hover: 226 232 240;
+    --color-border: 226 232 240;
+    --color-text-primary: 15 23 42;
+    --color-text-secondary: 71 85 105;
+    --color-text-muted: 148 163 184;
+    color-scheme: light;
+  }
+
+  .dark {
+    --color-background: 10 14 23;
+    --color-surface: 18 24 39;
+    --color-surface-hover: 26 34 51;
+    --color-border: 30 41 66;
+    --color-text-primary: 248 250 252;
+    --color-text-secondary: 148 163 184;
+    --color-text-muted: 100 116 139;
+    color-scheme: dark;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-background text-text-primary transition-colors duration-200;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  .btn-primary {
+    @apply btn bg-gold text-white hover:bg-gold-hover focus:ring-gold;
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface text-text-primary border border-border hover:bg-surface-hover focus:ring-border;
+  }
+
+  .btn-ghost {
+    @apply btn text-text-secondary hover:text-text-primary hover:bg-surface;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-colors;
+  }
+
+  .card {
+    @apply bg-surface border border-border rounded-xl p-6;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Legacy utilities: keep old pages readable in dark mode without touching every file. */
+  .dark .bg-white {
+    background-color: rgb(var(--color-surface)) !important;
+  }
+
+  .dark .bg-gray-50,
+  .dark .bg-gray-100,
+  .dark .bg-slate-50,
+  .dark .bg-slate-100 {
+    background-color: rgb(var(--color-surface-hover)) !important;
+  }
+
+  .dark .border-gray-100,
+  .dark .border-gray-200,
+  .dark .border-slate-200,
+  .dark .divide-gray-100,
+  .dark .divide-gray-200 {
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  .dark .text-gray-900,
+  .dark .text-slate-900 {
+    color: rgb(var(--color-text-primary)) !important;
+  }
+
+  .dark .text-gray-700,
+  .dark .text-gray-600,
+  .dark .text-gray-500,
+  .dark .text-slate-700,
+  .dark .text-slate-600 {
+    color: rgb(var(--color-text-secondary)) !important;
+  }
+
+  .dark .text-gray-400,
+  .dark .text-slate-400 {
+    color: rgb(var(--color-text-muted)) !important;
+  }
 }

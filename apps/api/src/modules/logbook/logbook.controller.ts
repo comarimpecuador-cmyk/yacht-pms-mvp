@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -17,6 +18,7 @@ import { YachtScopeGuard } from '../../common/guards/yacht-scope.guard';
 import {
   CreateEngineDto,
   CreateLogBookEntryDto,
+  UpdateEngineDto,
   UpdateLogBookEntryDto,
 } from './dto';
 import { LogbookService } from './logbook.service';
@@ -34,7 +36,7 @@ export class LogbookController {
   }
 
   @Get('logbook/entries')
-  @Roles('Chief Engineer', 'Captain', 'HoD', 'Management/Office')
+  @Roles('Chief Engineer', 'Captain', 'HoD', 'Management/Office', 'Crew Member', 'Admin')
   @YachtScope()
   listEntries(
     @Query('yachtId') yachtId: string,
@@ -45,13 +47,13 @@ export class LogbookController {
   }
 
   @Get('logbook/entries/:id')
-  @Roles('Chief Engineer', 'Captain', 'HoD', 'Management/Office', 'Crew Member')
+  @Roles('Chief Engineer', 'Captain', 'HoD', 'Management/Office', 'Crew Member', 'Admin')
   getEntry(@Param('id') id: string, @Req() req: { user: { yachtIds: string[] } }) {
     return this.logbookService.getEntry(id, req.user.yachtIds || []);
   }
 
   @Patch('logbook/entries/:id')
-  @Roles('Chief Engineer', 'Crew Member')
+  @Roles('Chief Engineer', 'Crew Member', 'Admin')
   updateEntry(
     @Param('id') id: string,
     @Body() body: UpdateLogBookEntryDto,
@@ -61,7 +63,7 @@ export class LogbookController {
   }
 
   @Post('logbook/entries/:id/submit')
-  @Roles('Chief Engineer', 'Crew Member')
+  @Roles('Chief Engineer', 'Crew Member', 'Admin')
   submitEntry(
     @Param('id') id: string,
     @Req() req: { user: { userId: string; yachtIds: string[] } },
@@ -70,7 +72,7 @@ export class LogbookController {
   }
 
   @Post('logbook/entries/:id/lock')
-  @Roles('Captain', 'Chief Engineer')
+  @Roles('Captain', 'Chief Engineer', 'Admin')
   lockEntry(
     @Param('id') id: string,
     @Req() req: { user: { userId: string; role: string; yachtIds: string[] } },
@@ -79,16 +81,38 @@ export class LogbookController {
   }
 
   @Post('engines')
-  @Roles('Chief Engineer', 'Captain')
+  @Roles('Chief Engineer', 'Captain', 'Admin')
   @YachtScope()
   createEngine(@Body() body: CreateEngineDto) {
     return this.logbookService.createEngine(body);
   }
 
   @Get('engines')
-  @Roles('Chief Engineer', 'Captain', 'HoD', 'Management/Office', 'Crew Member')
+  @Roles('Chief Engineer', 'Captain', 'HoD', 'Management/Office', 'Crew Member', 'Admin')
   @YachtScope()
-  listEngines(@Query('yachtId') yachtId: string, @Req() req: { user: { yachtIds: string[] } }) {
-    return this.logbookService.listEngines(yachtId, req.user.yachtIds || []);
+  listEngines(
+    @Query('yachtId') yachtId: string,
+    @Req() req: { user: { yachtIds: string[]; role: string } },
+  ) {
+    return this.logbookService.listEngines(yachtId, req.user.yachtIds || [], req.user.role);
+  }
+
+  @Patch('engines/:id')
+  @Roles('Chief Engineer', 'Captain', 'Admin')
+  updateEngine(
+    @Param('id') id: string,
+    @Body() body: UpdateEngineDto,
+    @Req() req: { user: { yachtIds: string[]; role: string } },
+  ) {
+    return this.logbookService.updateEngine(id, body, req.user.yachtIds || [], req.user.role);
+  }
+
+  @Delete('engines/:id')
+  @Roles('Chief Engineer', 'Captain', 'Admin')
+  deleteEngine(
+    @Param('id') id: string,
+    @Req() req: { user: { yachtIds: string[]; role: string } },
+  ) {
+    return this.logbookService.deleteEngine(id, req.user.yachtIds || [], req.user.role);
   }
 }

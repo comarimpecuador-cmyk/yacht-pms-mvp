@@ -8,21 +8,22 @@ datasource db {
 }
 
 model User {
-  id                      String                   @id @default(uuid())
-  email                   String                   @unique
-  fullName                String
-  passwordHash            String
-  roleId                  String
-  role                    Role                     @relation(fields: [roleId], references: [id])
-  crewProfile             CrewProfile?
-  alertsAssigned          Alert[]                  @relation("AlertAssignee")
-  notificationPreference  NotificationPreference?
-  notificationEvents      NotificationEvent[]
-  logBookEntries          LogBookEntry[]           @relation("UserCreatedLogBooks")
-  yachtAccesses           UserYachtAccess[]
-  assignedDocuments       Document[]               @relation("DocumentAssignee")
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
+  id                     String                  @id @default(uuid())
+  email                  String                  @unique
+  fullName               String
+  passwordHash           String
+  isActive               Boolean                 @default(true)
+  roleId                 String
+  role                   Role                    @relation(fields: [roleId], references: [id])
+  crewProfile            CrewProfile?
+  alertsAssigned         Alert[]                 @relation("AlertAssignee")
+  notificationPreference NotificationPreference?
+  notificationEvents     NotificationEvent[]
+  logBookEntries         LogBookEntry[]          @relation("UserCreatedLogBooks")
+  yachtAccesses          UserYachtAccess[]
+  assignedDocuments      Document[]              @relation("DocumentAssignee")
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 }
 
 model Role {
@@ -33,20 +34,31 @@ model Role {
 }
 
 model Yacht {
-  id                String              @id @default(uuid())
+  id                String                        @id @default(uuid())
   name              String
   flag              String
+  isActive          Boolean                       @default(true)
   imoOptional       String?
   departments       Department[]
   alerts            Alert[]
-  notificationPrefs NotificationPreference[]
+  notificationPrefs NotificationPreferenceYacht[]
   notificationLogs  NotificationEvent[]
-  engines          Engine[]
-  logBookEntries   LogBookEntry[]
-  documents              Document[]
-  userAccesses     UserYachtAccess[]
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  engines           Engine[]
+  logBookEntries    LogBookEntry[]
+  documents         Document[]
+  maintenanceTasks  MaintenanceTask[]
+  hrmSchedules      HrmSchedule[]
+  hrmRestDecls      HrmRestDeclaration[]
+  hrmLeaveRequests  HrmLeaveRequest[]
+  hrmPayrolls       HrmPayroll[]
+  logbookEventsV2   LogbookEventV2[]
+  inventoryItems    InventoryItem[]
+  inventoryMovements InventoryMovement[]
+  purchaseOrders    PurchaseOrder[]
+  purchaseOrderReceipts PurchaseOrderReceipt[]
+  userAccesses      UserYachtAccess[]
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
 }
 
 model Department {
@@ -71,55 +83,56 @@ model CrewProfile {
 }
 
 model Alert {
-  id          String   @id @default(uuid())
-  yachtId     String
-  yacht       Yacht    @relation(fields: [yachtId], references: [id])
-  module      String
-  entityId    String?
-  alertType   String
-  severity    String
-  dueAt       DateTime?
-  dedupeKey   String   @unique
-  assignedTo  String?
-  assignee    User?    @relation("AlertAssignee", fields: [assignedTo], references: [id])
-  resolvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(uuid())
+  yachtId    String
+  yacht      Yacht     @relation(fields: [yachtId], references: [id])
+  module     String
+  entityId   String?
+  alertType  String
+  severity   String
+  dueAt      DateTime?
+  dedupeKey  String    @unique
+  assignedTo String?
+  assignee   User?     @relation("AlertAssignee", fields: [assignedTo], references: [id])
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model NotificationPreference {
-  id            String   @id @default(uuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id])
-  timezone       String   @default("UTC")
-  inAppEnabled   Boolean  @default(true)
-  emailEnabled   Boolean  @default(false)
-  pushFuture     Boolean  @default(false)
-  windowStart    String   @default("08:00")
-  windowEnd      String   @default("18:00")
-  minSeverity    String   @default("info")
-  yachtsScope    String[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String                        @id @default(uuid())
+  userId       String                        @unique
+  user         User                          @relation(fields: [userId], references: [id])
+  timezone     String                        @default("UTC")
+  inAppEnabled Boolean                       @default(true)
+  emailEnabled Boolean                       @default(false)
+  pushFuture   Boolean                       @default(false)
+  windowStart  String                        @default("08:00")
+  windowEnd    String                        @default("18:00")
+  minSeverity  String                        @default("info")
+  yachtsScope  String[]
+  yachtLinks   NotificationPreferenceYacht[]
+  createdAt    DateTime                      @default(now())
+  updatedAt    DateTime                      @updatedAt
 
   @@index([userId])
 }
 
 model NotificationEvent {
-  id         String   @id @default(uuid())
-  yachtId    String?
-  yacht      Yacht?   @relation(fields: [yachtId], references: [id])
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  channel    String
-  type       String
-  payload    Json
-  status     String
-  dedupeKey  String
-  sentAt     DateTime?
-  readAt     DateTime?
-  error      String?
-  createdAt  DateTime @default(now())
+  id        String    @id @default(uuid())
+  yachtId   String?
+  yacht     Yacht?    @relation(fields: [yachtId], references: [id])
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id])
+  channel   String
+  type      String
+  payload   Json
+  status    String
+  dedupeKey String
+  sentAt    DateTime?
+  readAt    DateTime?
+  error     String?
+  createdAt DateTime  @default(now())
 
   @@index([userId, status])
   @@index([dedupeKey, channel, createdAt])
@@ -139,7 +152,6 @@ model AuditEvent {
   ipDevice   String?
 }
 
-
 enum LogBookStatus {
   Draft
   Submitted
@@ -148,44 +160,45 @@ enum LogBookStatus {
 }
 
 model Engine {
-  id        String                @id @default(uuid())
-  yachtId   String
-  yacht     Yacht                 @relation(fields: [yachtId], references: [id])
-  name      String
-  type      String
-  serialNo  String
-  counters  EngineCounter[]
-  readings  LogBookEngineReading[]
+  id       String                 @id @default(uuid())
+  yachtId  String
+  yacht    Yacht                  @relation(fields: [yachtId], references: [id])
+  name     String
+  type     String
+  serialNo String
+  counters EngineCounter[]
+  readings LogBookEngineReading[]
+  inventoryItems InventoryItem[]
 
   @@index([yachtId])
 }
 
 model EngineCounter {
-  id              String    @id @default(uuid())
-  engineId         String
-  engine           Engine    @relation(fields: [engineId], references: [id])
-  readingHours     Float
-  readingDate      DateTime
-  sourceLogbookId  String?
-  sourceLogbook    LogBookEntry? @relation(fields: [sourceLogbookId], references: [id])
+  id              String        @id @default(uuid())
+  engineId        String
+  engine          Engine        @relation(fields: [engineId], references: [id])
+  readingHours    Float
+  readingDate     DateTime
+  sourceLogbookId String?
+  sourceLogbook   LogBookEntry? @relation(fields: [sourceLogbookId], references: [id])
 
   @@index([engineId, readingDate])
 }
 
 model LogBookEntry {
   id             String                 @id @default(uuid())
-  yachtId         String
-  yacht           Yacht                  @relation(fields: [yachtId], references: [id])
-  entryDate       DateTime
-  watchPeriod     String
-  status          LogBookStatus          @default(Draft)
-  createdBy       String
-  creator         User                    @relation("UserCreatedLogBooks", fields: [createdBy], references: [id])
-  engineReadings  LogBookEngineReading[]
-  observations    LogBookObservation[]
-  counters        EngineCounter[]
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  yachtId        String
+  yacht          Yacht                  @relation(fields: [yachtId], references: [id])
+  entryDate      DateTime
+  watchPeriod    String
+  status         LogBookStatus          @default(Draft)
+  createdBy      String
+  creator        User                   @relation("UserCreatedLogBooks", fields: [createdBy], references: [id])
+  engineReadings LogBookEngineReading[]
+  observations   LogBookObservation[]
+  counters       EngineCounter[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
 
   @@unique([yachtId, entryDate])
   @@index([yachtId, entryDate])
@@ -193,11 +206,11 @@ model LogBookEntry {
 
 model LogBookEngineReading {
   id        String       @id @default(uuid())
-  logbookId  String
-  logbook    LogBookEntry @relation(fields: [logbookId], references: [id])
-  engineId   String
-  engine     Engine       @relation(fields: [engineId], references: [id])
-  hours      Float
+  logbookId String
+  logbook   LogBookEntry @relation(fields: [logbookId], references: [id])
+  engineId  String
+  engine    Engine       @relation(fields: [engineId], references: [id])
+  hours     Float
 
   @@unique([logbookId, engineId])
   @@index([logbookId])
@@ -205,14 +218,13 @@ model LogBookEngineReading {
 
 model LogBookObservation {
   id        String       @id @default(uuid())
-  logbookId  String
-  logbook    LogBookEntry @relation(fields: [logbookId], references: [id])
+  logbookId String
+  logbook   LogBookEntry @relation(fields: [logbookId], references: [id])
   category  String
   text      String
 
   @@index([logbookId])
 }
-
 
 model UserYachtAccess {
   id               String   @id @default(uuid())
@@ -221,12 +233,13 @@ model UserYachtAccess {
   yachtId          String
   yacht            Yacht    @relation(fields: [yachtId], references: [id])
   roleNameOverride String?
+  revokedAt        DateTime?
+  revokedBy        String?
   createdAt        DateTime @default(now())
 
   @@unique([userId, yachtId])
   @@index([yachtId])
 }
-
 
 enum DocumentStatus {
   Active
@@ -237,29 +250,82 @@ enum DocumentStatus {
   Archived
 }
 
+enum DocumentWorkflowStatus {
+  draft
+  submitted
+  approved
+  rejected
+  archived
+}
+
+enum DocumentConfidentiality {
+  public
+  crew_only
+  management_only
+  admin_only
+}
+
 model Document {
-  id               String         @id @default(uuid())
+  id               String             @id @default(uuid())
   yachtId          String
-  yacht            Yacht          @relation(fields: [yachtId], references: [id])
+  yacht            Yacht              @relation(fields: [yachtId], references: [id])
+  title            String?            @db.VarChar(180)
   docType          String
+  docSubType       String?
+  workflowStatus   DocumentWorkflowStatus @default(draft)
+  confidentiality  DocumentConfidentiality @default(crew_only)
+  tags             String[]
+  identifier       String?
+  issuedAt         DateTime?
   expiryDate       DateTime?
-  status           DocumentStatus @default(Active)
+  notes            String?
+  status           DocumentStatus     @default(Active)
   createdBy        String
+  approvedByUserId String?
+  approvedAt       DateTime?
+  lockedAt         DateTime?
+  workflowReason   String?
+  currentVersionId String?
+  legacyRefs       Json?
   assignedToUserId String?
-  assignedToUser   User?          @relation("DocumentAssignee", fields: [assignedToUserId], references: [id])
-  createdAt        DateTime       @default(now())
+  assignedToUser   User?              @relation("DocumentAssignee", fields: [assignedToUserId], references: [id])
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   evidences        DocumentEvidence[]
+  versions         DocumentVersion[]
   renewals         DocumentRenewal[]
 
+  @@index([yachtId, workflowStatus])
   @@index([yachtId, expiryDate])
 }
 
+model DocumentVersion {
+  id               String   @id @default(uuid())
+  documentId       String
+  document         Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versionNo        Int
+  fileKey          String?
+  storageProvider  String?  @default("local")
+  fileUrl          String
+  fileName         String
+  mimeType         String
+  sizeBytes        Int?
+  checksumSha256   String?
+  uploadedByUserId String
+  uploadedAt       DateTime @default(now())
+  note             String?
+  createdAt        DateTime @default(now())
+
+  @@unique([documentId, versionNo])
+  @@index([documentId, uploadedAt])
+  @@index([fileKey])
+}
 
 model DocumentRenewal {
-  id          String    @id @default(uuid())
+  id          String             @id @default(uuid())
   documentId  String
-  document    Document  @relation(fields: [documentId], references: [id])
-  requestedAt DateTime  @default(now())
+  document    Document           @relation(fields: [documentId], references: [id])
+  requestedAt DateTime           @default(now())
   completedAt DateTime?
   status      String
   evidences   DocumentEvidence[]
@@ -267,17 +333,465 @@ model DocumentRenewal {
   @@index([documentId, status])
 }
 
-
 model DocumentEvidence {
-  id          String           @id @default(uuid())
-  documentId  String
-  document    Document         @relation(fields: [documentId], references: [id])
-  renewalId   String?
-  renewal     DocumentRenewal? @relation(fields: [renewalId], references: [id])
-  fileUrl     String
-  uploadedBy  String
-  uploadedAt  DateTime         @default(now())
+  id         String           @id @default(uuid())
+  documentId String
+  document   Document         @relation(fields: [documentId], references: [id])
+  renewalId  String?
+  renewal    DocumentRenewal? @relation(fields: [renewalId], references: [id])
+  fileUrl    String
+  comment    String?
+  uploadedBy String
+  uploadedAt DateTime         @default(now())
 
   @@index([documentId, uploadedAt])
   @@index([renewalId])
+}
+
+enum InventoryCategory {
+  engineering
+  deck
+  safety
+  housekeeping
+  galley
+  admin
+  other
+}
+
+enum InventoryMovementType {
+  in
+  out
+  adjustment
+  transfer_in
+  transfer_out
+}
+
+enum PurchaseOrderStatus {
+  draft
+  submitted
+  approved
+  ordered
+  partially_received
+  received
+  cancelled
+}
+
+model InventoryItem {
+  id              String            @id @default(uuid())
+  yachtId         String
+  yacht           Yacht             @relation(fields: [yachtId], references: [id])
+  sku             String?
+  name            String
+  description     String?
+  category        InventoryCategory @default(other)
+  unit            String
+  location        String?
+  minStock        Float             @default(0)
+  currentStock    Float             @default(0)
+  engineId        String?
+  engine          Engine?           @relation(fields: [engineId], references: [id], onDelete: SetNull)
+  isActive        Boolean           @default(true)
+  createdByUserId String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  movements       InventoryMovement[]
+  purchaseOrderLines PurchaseOrderLine[]
+
+  @@unique([yachtId, sku])
+  @@index([yachtId, category, isActive])
+  @@index([yachtId, currentStock, minStock])
+}
+
+model InventoryMovement {
+  id               String                @id @default(uuid())
+  yachtId          String
+  yacht            Yacht                 @relation(fields: [yachtId], references: [id])
+  itemId           String
+  item             InventoryItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type             InventoryMovementType
+  quantity         Float
+  reason           String
+  referenceType    String?
+  referenceId      String?
+  maintenanceTaskId String?
+  engineId         String?
+  purchaseOrderId  String?
+  purchaseOrder    PurchaseOrder?        @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  performedByUserId String
+  occurredAt       DateTime
+  beforeQty        Float
+  afterQty         Float
+  createdAt        DateTime              @default(now())
+
+  @@index([yachtId, occurredAt])
+  @@index([itemId, occurredAt])
+  @@index([referenceType, referenceId])
+  @@index([purchaseOrderId])
+}
+
+model PurchaseOrder {
+  id                String               @id @default(uuid())
+  yachtId           String
+  yacht             Yacht                @relation(fields: [yachtId], references: [id])
+  poNumber          String
+  vendorName        String
+  vendorEmail       String?
+  vendorPhone       String?
+  currency          String               @default("USD")
+  status            PurchaseOrderStatus  @default(draft)
+  requestedByUserId String
+  approvedByUserId  String?
+  approvedAt        DateTime?
+  expectedDeliveryAt DateTime?
+  notes             String?
+  subtotal          Float                @default(0)
+  tax               Float                @default(0)
+  total             Float                @default(0)
+  lockedAt          DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  lines             PurchaseOrderLine[]
+  receipts          PurchaseOrderReceipt[]
+  attachments       PurchaseOrderAttachment[]
+  inventoryMovements InventoryMovement[]
+
+  @@unique([yachtId, poNumber])
+  @@index([yachtId, status, expectedDeliveryAt])
+}
+
+model PurchaseOrderLine {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  itemId          String?
+  item            InventoryItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  freeTextName    String?
+  quantityOrdered Float
+  unitPrice       Float
+  taxRate         Float?        @default(0)
+  quantityReceived Float        @default(0)
+  requiredByAt    DateTime?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  receiptLines    PurchaseOrderReceiptLine[]
+
+  @@index([purchaseOrderId])
+  @@index([itemId])
+}
+
+model PurchaseOrderReceipt {
+  id               String        @id @default(uuid())
+  purchaseOrderId  String
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  yachtId          String
+  yacht            Yacht         @relation(fields: [yachtId], references: [id])
+  receivedAt       DateTime
+  receivedByUserId String
+  reason           String
+  createdAt        DateTime      @default(now())
+  lines            PurchaseOrderReceiptLine[]
+
+  @@index([purchaseOrderId, receivedAt])
+  @@index([yachtId, receivedAt])
+}
+
+model PurchaseOrderReceiptLine {
+  id                  String              @id @default(uuid())
+  receiptId           String
+  receipt             PurchaseOrderReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  purchaseOrderLineId String
+  purchaseOrderLine   PurchaseOrderLine   @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Cascade)
+  quantityReceived    Float
+  createdAt           DateTime            @default(now())
+
+  @@index([receiptId])
+  @@index([purchaseOrderLineId])
+}
+
+model PurchaseOrderAttachment {
+  id               String        @id @default(uuid())
+  purchaseOrderId  String
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  fileKey          String?
+  fileUrl          String
+  fileName         String
+  mimeType         String
+  sizeBytes        Int?
+  uploadedByUserId String
+  uploadedAt       DateTime      @default(now())
+  note             String?
+  createdAt        DateTime      @default(now())
+
+  @@index([purchaseOrderId, uploadedAt])
+}
+
+enum MaintenanceTaskStatus {
+  Draft
+  Submitted
+  Approved
+  InProgress
+  Completed
+  Rejected
+  Cancelled
+}
+
+enum MaintenanceTaskPriority {
+  Low
+  Medium
+  High
+  Critical
+}
+
+model MaintenanceTask {
+  id               String                 @id @default(uuid())
+  yachtId          String
+  yacht            Yacht                  @relation(fields: [yachtId], references: [id])
+  title            String
+  description      String?
+  engineId         String?
+  systemTag        String?
+  priority         MaintenanceTaskPriority @default(Medium)
+  dueDate          DateTime
+  assignedToUserId String?
+  status           MaintenanceTaskStatus  @default(Draft)
+  submittedAt      DateTime?
+  reviewedAt       DateTime?
+  reviewedBy       String?
+  rejectionReason  String?
+  completedAt      DateTime?
+  completionNotes  String?
+  workHours        Float?
+  createdBy        String
+  evidences        MaintenanceEvidence[]
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([yachtId, status, dueDate])
+  @@index([assignedToUserId])
+}
+
+model MaintenanceEvidence {
+  id         String          @id @default(uuid())
+  taskId     String
+  task       MaintenanceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  fileUrl    String
+  comment    String?
+  uploadedBy String
+  uploadedAt DateTime        @default(now())
+
+  @@index([taskId, uploadedAt])
+}
+
+enum HrmLeaveStatus {
+  Pending
+  Approved
+  Rejected
+  Cancelled
+}
+
+enum HrmPayrollStatus {
+  Draft
+  Published
+}
+
+model HrmSchedule {
+  id         String   @id @default(uuid())
+  yachtId    String
+  yacht      Yacht    @relation(fields: [yachtId], references: [id])
+  userId     String
+  workDate   DateTime
+  startTime  String
+  endTime    String
+  restHours  Float    @default(0)
+  notes      String?
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([yachtId, userId, workDate])
+}
+
+model HrmRestDeclaration {
+  id          String   @id @default(uuid())
+  yachtId     String
+  yacht       Yacht    @relation(fields: [yachtId], references: [id])
+  userId      String
+  workDate    DateTime
+  workedHours Float
+  restHours   Float
+  compliant   Boolean
+  comment     String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  @@index([yachtId, userId, workDate])
+}
+
+model HrmLeaveRequest {
+  id              String         @id @default(uuid())
+  yachtId         String
+  yacht           Yacht          @relation(fields: [yachtId], references: [id])
+  userId          String
+  type            String
+  startDate       DateTime
+  endDate         DateTime
+  comment         String?
+  status          HrmLeaveStatus @default(Pending)
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  rejectionReason String?
+  createdBy       String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([yachtId, status, startDate])
+  @@index([userId, startDate])
+}
+
+model HrmPayroll {
+  id          String           @id @default(uuid())
+  yachtId     String
+  yacht       Yacht            @relation(fields: [yachtId], references: [id])
+  period      String
+  currency    String           @default("USD")
+  status      HrmPayrollStatus @default(Draft)
+  generatedBy String
+  generatedAt DateTime         @default(now())
+  publishedAt DateTime?
+  lines       HrmPayrollLine[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([yachtId, period])
+  @@index([yachtId, period, status])
+}
+
+model HrmPayrollLine {
+  id               String     @id @default(uuid())
+  payrollId        String
+  payroll          HrmPayroll @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  userId           String
+  baseAmount       Float
+  bonusAmount      Float      @default(0)
+  deductionsAmount Float      @default(0)
+  netAmount        Float
+
+  @@index([payrollId])
+  @@index([userId])
+}
+
+model NotificationPreferenceYacht {
+  id                 String @id @default(uuid())
+  yachtId            String
+  notificationPrefId String
+
+  yacht            Yacht                  @relation(fields: [yachtId], references: [id], onDelete: Cascade)
+  notificationPref NotificationPreference @relation(fields: [notificationPrefId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([yachtId, notificationPrefId])
+  @@index([yachtId])
+  @@index([notificationPrefId])
+}
+
+enum LogbookEventV2Type {
+  entry
+  exit
+  service
+  maintenance
+  incident
+  operation
+}
+
+enum LogbookEventV2Severity {
+  info
+  warn
+  critical
+}
+
+enum LogbookEventV2Status {
+  draft
+  submitted
+  approved
+  rejected
+  closed
+  cancelled
+}
+
+model LogbookEventV2 {
+  id                  String                  @id @default(uuid())
+  yachtId             String
+  yacht               Yacht                   @relation(fields: [yachtId], references: [id])
+  occurredAt          DateTime
+  loggedAt            DateTime
+  timezone            String
+  watchPeriod         String?
+  sequenceNo          Int
+  eventType           LogbookEventV2Type
+  eventSubType        String
+  category            String
+  severity            LogbookEventV2Severity
+  workflowStatus      LogbookEventV2Status
+  approvalRequired    Boolean                 @default(false)
+  approvalLevel       String?
+  statusReason        String?
+  title               String
+  description         String
+  locationSource      String?
+  latitude            Float?
+  longitude           Float?
+  portName            String?
+  area                String?
+  countryCode         String?
+  accuracyMeters      Float?
+  reportedByUserId    String
+  reportedByName      String
+  reportedByRole      String?
+  assignedToUserId    String?
+  approvedByUserId    String?
+  acknowledgedByUserIds String[]
+  legacyEntryId       String?
+  rawJson             Json
+  lockedAt            DateTime?
+  lockedByUserId      String?
+  evidences           LogbookEventEvidenceV2[]
+  audits              LogbookEventAuditV2[]
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@index([yachtId, occurredAt])
+  @@index([eventType, severity, workflowStatus])
+  @@index([legacyEntryId])
+}
+
+model LogbookEventEvidenceV2 {
+  id               String         @id @default(uuid())
+  eventId          String
+  event            LogbookEventV2 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fileUrl          String
+  fileName         String
+  mimeType         String
+  checksumSha256   String?
+  uploadedByUserId String
+  uploadedAt       DateTime
+  caption          String?
+  createdAt        DateTime       @default(now())
+
+  @@index([eventId, uploadedAt])
+}
+
+model LogbookEventAuditV2 {
+  id              String          @id @default(uuid())
+  eventId         String
+  event           LogbookEventV2  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  changedAt       DateTime
+  changedByUserId String
+  changeType      String
+  changedFields   String[]
+  reason          String
+  createdAt       DateTime        @default(now())
+
+  @@index([eventId, changedAt])
 }

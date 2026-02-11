@@ -9,6 +9,7 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
+    "@types/passport-jwt": "^4.0.1",
     "prettier": "^3.3.3",
     "turbo": "^2.1.3"
   }

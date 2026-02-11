@@ -1,4 +1,5 @@
 export enum RoleName {
+  SystemAdmin = 'SystemAdmin',
   ChiefEngineer = 'Chief Engineer',
   Captain = 'Captain',
   HoD = 'HoD',

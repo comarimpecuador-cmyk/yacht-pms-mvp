@@ -27,9 +27,10 @@ export class RuleEngineService {
     const captainAccess = await this.prisma.userYachtAccess.findFirst({
       where: {
         yachtId,
+        revokedAt: null,
         OR: [
           { roleNameOverride: 'Captain' },
-          { user: { role: { name: 'Captain' } } },
+          { user: { role: { name: 'Captain' }, isActive: true } },
         ],
       },
       select: { userId: true },
@@ -40,9 +41,10 @@ export class RuleEngineService {
     const managementAccess = await this.prisma.userYachtAccess.findFirst({
       where: {
         yachtId,
+        revokedAt: null,
         OR: [
           { roleNameOverride: 'Management/Office' },
-          { user: { role: { name: 'Management/Office' } } },
+          { user: { role: { name: 'Management/Office' }, isActive: true } },
         ],
       },
       select: { userId: true },
@@ -148,90 +150,75 @@ export class RuleEngineService {
   }
 
   private async detectMaintenanceDueOverdue() {
-    const yachtId = 'mock-yacht';
-    const userId = 'mock-chief-engineer';
-    const dedupeKey = `maintenance-due-${yachtId}`;
-    const dueAt = new Date();
+    const now = new Date();
+    const dueSoon = new Date(now);
+    dueSoon.setDate(dueSoon.getDate() + 3);
 
-    await this.alertsService.upsertAlert({
-      yachtId,
-      module: 'maintenance',
-      alertType: 'due_or_overdue',
-      severity: 'warn',
-      dueAt,
-      dedupeKey,
-      assignedTo: userId,
+    const tasks = await this.prisma.maintenanceTask.findMany({
+      where: {
+        dueDate: { lte: dueSoon },
+        status: { in: ['Draft', 'Submitted', 'Approved', 'InProgress', 'Rejected'] },
+      },
+      select: {
+        id: true,
+        yachtId: true,
+        title: true,
+        dueDate: true,
+        assignedToUserId: true,
+        createdBy: true,
+        priority: true,
+      },
+      orderBy: { dueDate: 'asc' },
     });
 
-    await this.notificationsService.createInApp({
-      userId,
-      yachtId,
-      type: 'maintenance.due',
-      dedupeKey,
-      payload: { yachtId },
-    });
-  }
+    for (const task of tasks) {
+      const overdue = task.dueDate.getTime() < now.getTime();
+      const severity: 'warn' | 'critical' =
+        overdue || task.priority === 'Critical' ? 'critical' : 'warn';
+      const responsibleUserId = task.assignedToUserId
+        ? task.assignedToUserId
+        : await this.resolveResponsibleUserId(task.yachtId, task.createdBy);
 
-  private async detectIsmPendingSignatures() {
-    const yachtId = 'mock-yacht';
-    const userId = 'mock-captain';
-    const dedupeKey = `ism-pending-signature-${yachtId}`;
-
-    await this.alertsService.upsertAlert({
-      yachtId,
-      module: 'ism',
-      alertType: 'pending_signature',
-      severity: 'warn',
-      dueAt: new Date(),
-      dedupeKey,
-      assignedTo: userId,
-    });
-
-    await this.notificationsService.createInApp({
-      userId,
-      yachtId,
-      type: 'ism.pending_signature',
-      dedupeKey,
-      payload: { yachtId },
-    });
-  }
-
-  private async detectRequisitionsPendingApprovals() {
-    const levels = ['hod', 'captain', 'management'];
-    const yachtId = 'mock-yacht';
-
-    for (const level of levels) {
-      const dedupeKey = `requisitions-pending-${yachtId}-${level}`;
-      const userId = `mock-${level}`;
-
+      const dedupeKey = `maintenance-${task.id}-${overdue ? 'overdue' : 'due'}`;
       await this.alertsService.upsertAlert({
-        yachtId,
-        module: 'requisitions',
-        alertType: `pending_${level}_approval`,
-        severity: level === 'management' ? 'critical' : 'warn',
-        dueAt: new Date(),
+        yachtId: task.yachtId,
+        module: 'maintenance',
+        alertType: overdue ? 'TASK_OVERDUE' : 'TASK_DUE_SOON',
+        severity,
+        dueAt: task.dueDate,
         dedupeKey,
-        assignedTo: userId,
+        entityId: task.id,
+        assignedTo: responsibleUserId,
       });
 
       await this.notificationsService.createInApp({
-        userId,
-        yachtId,
-        type: 'requisitions.pending_approval',
+        userId: responsibleUserId,
+        yachtId: task.yachtId,
+        type: overdue ? 'maintenance.overdue' : 'maintenance.due_soon',
         dedupeKey,
-        payload: { level },
+        payload: { taskId: task.id, title: task.title, dueDate: task.dueDate.toISOString() },
       });
 
-      if (level === 'management') {
+      if (severity === 'critical') {
         await this.notificationsService.maybeSendEmail({
-          userId,
-          yachtId,
-          type: 'requisitions.pending_approval',
+          userId: responsibleUserId,
+          yachtId: task.yachtId,
+          type: overdue ? 'maintenance.overdue' : 'maintenance.due_soon',
           dedupeKey,
-          severity: 'critical',
-          payload: { level },
+          severity,
+          payload: { taskId: task.id, title: task.title, dueDate: task.dueDate.toISOString() },
         });
       }
     }
+  }
+
+  private async detectIsmPendingSignatures() {
+    // ISM funcional aun no implementado: se evita crear alertas mock.
+    return;
+  }
+
+  private async detectRequisitionsPendingApprovals() {
+    // Requisitions funcional aun no implementado: se evita crear alertas mock.
+    return;
   }
 }
