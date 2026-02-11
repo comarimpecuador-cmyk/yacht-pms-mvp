@@ -32,26 +32,28 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const tokens = await this.authService.loginWithEmail(body.email, body.password);
-
-    // Reset explícito para evitar mezcla de sesión al cambiar de usuario
-    response.clearCookie('accessToken', { path: '/' });
-    response.clearCookie('refreshToken', { path: '/' });
-    
-    // 🔐 MIGRACIÓN: HTTP-Only Cookies
-    response.cookie('accessToken', tokens.accessToken, {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
+    const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
+    const baseCookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutos
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'lax') as const,
       path: '/',
+      ...domainOption,
+    };
+
+    response.clearCookie('accessToken', { path: '/', ...domainOption });
+    response.clearCookie('refreshToken', { path: '/', ...domainOption });
+
+    response.cookie('accessToken', tokens.accessToken, {
+      ...baseCookieOptions,
+      maxAge: 15 * 60 * 1000,
     });
 
     response.cookie('refreshToken', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
-      path: '/',
+      ...baseCookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return { success: true };
@@ -94,47 +96,51 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Res({ passthrough: true }) response: Response) {
-    // Limpiar cookies
-    response.clearCookie('accessToken', { path: '/' });
-    response.clearCookie('refreshToken', { path: '/' });
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
+    const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
+
+    response.clearCookie('accessToken', { path: '/', ...domainOption });
+    response.clearCookie('refreshToken', { path: '/', ...domainOption });
     return { success: true };
   }
 
   @Post('refresh')
   async refresh(@Req() req: Request, @Res() res: Response) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
+    const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
+    const baseCookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'lax') as const,
+      path: '/',
+      ...domainOption,
+    };
+
     try {
-      // 1. Leer refreshToken de cookie httpOnly
       const refreshToken = req.cookies?.refreshToken;
-      
+
       if (!refreshToken) {
         throw new UnauthorizedException('No refresh token');
       }
 
-      // 2. Validar y generar nuevos tokens
       const tokens = await this.authService.refresh(refreshToken);
 
-      // 3. Actualizar cookies (mismo formato que login)
       res.cookie('accessToken', tokens.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        ...baseCookieOptions,
         maxAge: 15 * 60 * 1000,
-        path: '/',
       });
 
       res.cookie('refreshToken', tokens.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        ...baseCookieOptions,
         maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: '/',
       });
 
       return res.json({ success: true });
     } catch (error) {
-      // Limpiar cookies si hay error
-      res.clearCookie('accessToken', { path: '/' });
-      res.clearCookie('refreshToken', { path: '/' });
+      res.clearCookie('accessToken', { path: '/', ...domainOption });
+      res.clearCookie('refreshToken', { path: '/', ...domainOption });
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
