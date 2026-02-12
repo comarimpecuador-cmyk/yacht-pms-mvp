@@ -1,5 +1,5 @@
 import { Body, Controller, Post, Res, Get, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
-import { Response, Request } from 'express';
+import { Response, Request, CookieOptions } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -35,10 +35,11 @@ export class AuthController {
     const isProduction = process.env.NODE_ENV === 'production';
     const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
     const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
-    const baseCookieOptions = {
+    const sameSite: CookieOptions['sameSite'] = isProduction ? 'none' : 'lax';
+    const baseCookieOptions: CookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: (isProduction ? 'none' : 'lax') as const,
+      sameSite,
       path: '/',
       ...domainOption,
     };
@@ -110,10 +111,11 @@ export class AuthController {
     const isProduction = process.env.NODE_ENV === 'production';
     const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
     const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
-    const baseCookieOptions = {
+    const sameSite: CookieOptions['sameSite'] = isProduction ? 'none' : 'lax';
+    const baseCookieOptions: CookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: (isProduction ? 'none' : 'lax') as const,
+      sameSite,
       path: '/',
       ...domainOption,
     };
