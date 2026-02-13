@@ -1,34 +1,29 @@
 # Yacht PMS MVP - Runbook
 
-## Arquitectura breve
-- **Monorepo Turborepo** con apps `api`, `web`, `mobile` y paquete `shared`.
-- **API**: NestJS + Prisma + PostgreSQL + BullMQ/Redis.
-- **Web**: Next.js App Router + Tailwind + base de componentes (incluyendo setup shadcn/ui).
-- **Mobile**: Expo + navegación por tabs + SQLite para `pending_ops` offline.
-- **Shared**: enums, roles, y schemas Zod base.
-- **Extensión MVP**: Notificaciones + Timeline/Agenda por yacht sin charts.
+## Architecture
+- Monorepo Turborepo with apps `api`, `web`, `mobile`, plus `packages/shared`.
+- API: NestJS + Prisma + PostgreSQL + BullMQ/Redis.
+- Web: Next.js App Router + Tailwind.
+- Mobile: Expo.
 
-## Requisitos
+## Requirements
 - Node 20+
 - pnpm 9+
 - PostgreSQL
 - Redis
 
-## Variables de entorno
+## Env files
 - `apps/api/.env.example`
 - `apps/web/.env.example`
 - `apps/mobile/.env.example`
 
-## Comandos
-Desde la raíz:
-
+## Commands
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Comandos por app:
-
+Per app:
 ```bash
 pnpm --filter @yacht-pms/api dev
 pnpm --filter @yacht-pms/web dev
@@ -36,8 +31,14 @@ pnpm --filter @yacht-pms/mobile dev
 ```
 
 ## Auth
-- Estrategia elegida: **Bearer tokens en headers** (`Authorization: Bearer <access_token>`).
-- Endpoint base: `/api/auth/login` y `/api/auth/refresh`.
+- Strategy: bearer tokens (`Authorization: Bearer <access_token>`).
+- Base endpoints: `/api/auth/login`, `/api/auth/refresh`.
 
-## Notificaciones
-- Ver `docs/NOTIFICATIONS.md` para tipos de eventos, reglas de envío y pruebas locales con proveedor email mock.
+## Notifications (current)
+- `docs/NOTIFICATIONS.md`
+
+## Notifications + Jobs (phase 0)
+- `plans/notifications-jobs-phase0-adr.md`
+- `docs/NOTIFICATIONS_JOBS_EVENT_MAP.md`
+- `docs/NOTIFICATIONS_JOBS_API_CONTRACT.md`
+- `docs/NOTIFICATIONS_JOBS_PRISMA_DRAFT.md`
