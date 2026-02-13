@@ -17,7 +17,12 @@ const YACHT_MODULES = [
   { label: 'Ordenes de compra', href: '/purchase-orders' },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+  showMobileHeader?: boolean;
+}
+
+export function Sidebar({ onNavigate, showMobileHeader = false }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const { currentYacht, isLoading: yachtLoading } = useYacht();
@@ -61,12 +66,40 @@ export function Sidebar() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
+  const linkClass = (href: string) =>
+    `menu-item ${
+      isActive(href)
+        ? 'menu-item-active'
+        : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+    }`;
+
+  const handleNavigate = () => {
+    onNavigate?.();
+  };
+
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-border bg-surface">
+    <aside className="flex h-full w-72 max-w-[85vw] flex-col border-r border-border bg-surface">
       <div className="border-b border-border p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text-primary">{translate('auth.yachtPMS')}</h2>
-          <ThemeToggle />
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold text-text-primary">{translate('auth.yachtPMS')}</h2>
+            <p className="text-[11px] uppercase tracking-wider text-text-muted">Navegacion</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {showMobileHeader ? (
+              <button
+                type="button"
+                onClick={handleNavigate}
+                className="inline-flex h-9 w-9 items-center justify-center border border-border bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary lg:hidden"
+                aria-label="Cerrar menu"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+            ) : null}
+          </div>
         </div>
 
         {yachtLoading ? (
@@ -80,7 +113,7 @@ export function Sidebar() {
                 <span className="h-2 w-2 rounded-full bg-green-500" />
                 {translate('yacht.active')}
               </div>
-              <Link href="/yachts" className="text-xs text-accent hover:underline">
+              <Link href="/yachts" onClick={handleNavigate} className="text-xs font-medium text-accent hover:underline">
                 Cambiar
               </Link>
             </div>
@@ -91,7 +124,7 @@ export function Sidebar() {
             <p className="mt-1 text-xs text-text-secondary">
               Selecciona un yate para habilitar motores, bitacora y documentos.
             </p>
-            <Link href="/yachts" className="mt-2 inline-block text-xs text-accent hover:underline">
+            <Link href="/yachts" onClick={handleNavigate} className="mt-2 inline-block text-xs font-medium text-accent hover:underline">
               Seleccionar yate
             </Link>
           </div>
@@ -100,20 +133,11 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto py-4">
         <div className="px-4 pb-2">
-          <div className="mb-2 text-xs font-medium uppercase tracking-wider text-text-secondary">
-            {translate('nav.general')}
-          </div>
+          <div className="menu-section-title">{translate('nav.general')}</div>
           <ul className="space-y-1">
             {generalModules.map((item) => (
               <li key={`${item.href}-${item.label}`}>
-                <Link
-                  href={item.href}
-                  className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-                    isActive(item.href)
-                      ? 'bg-accent/10 font-medium text-accent'
-                      : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
-                  }`}
-                >
+                <Link href={item.href} onClick={handleNavigate} className={linkClass(item.href)}>
                   {item.label}
                 </Link>
               </li>
@@ -122,19 +146,10 @@ export function Sidebar() {
         </div>
 
         <div className="px-4 pb-2">
-          <div className="mb-2 text-xs font-medium uppercase tracking-wider text-text-secondary">
-            Operacion del yate
-          </div>
+          <div className="menu-section-title">Operacion del yate</div>
           {currentYacht ? (
             <>
-              <Link
-                href={`/yachts/${yachtId}/home`}
-                className={`mb-1 block rounded-lg px-3 py-2 text-sm transition-colors ${
-                  isActive(`/yachts/${yachtId}/home`)
-                    ? 'bg-accent/10 font-medium text-accent'
-                    : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
-                }`}
-              >
+              <Link href={`/yachts/${yachtId}/home`} onClick={handleNavigate} className={linkClass(`/yachts/${yachtId}/home`)}>
                 Dashboard del yate
               </Link>
               <ul className="space-y-1">
@@ -142,14 +157,7 @@ export function Sidebar() {
                   const href = `/yachts/${yachtId}${item.href}`;
                   return (
                     <li key={href}>
-                      <Link
-                        href={href}
-                        className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-                          isActive(item.href)
-                            ? 'bg-accent/10 font-medium text-accent'
-                            : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
-                        }`}
-                      >
+                      <Link href={href} onClick={handleNavigate} className={linkClass(item.href)}>
                         {item.label}
                       </Link>
                     </li>
@@ -165,20 +173,11 @@ export function Sidebar() {
         </div>
 
         <div className="px-4 pb-2">
-          <div className="mb-2 text-xs font-medium uppercase tracking-wider text-text-secondary">
-            {translate('nav.system')}
-          </div>
+          <div className="menu-section-title">{translate('nav.system')}</div>
           <ul className="space-y-1">
             {settingsModules.map((item) => (
               <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-                    isActive(item.href)
-                      ? 'bg-accent/10 font-medium text-accent'
-                      : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
-                  }`}
-                >
+                <Link href={item.href} onClick={handleNavigate} className={linkClass(item.href)}>
                   {item.label}
                 </Link>
               </li>

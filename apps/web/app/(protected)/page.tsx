@@ -126,7 +126,7 @@ export default function YachtsPage() {
               <button
                 type="button"
                 onClick={() => setShowAddYacht(true)}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
               >
                 Crear yate
               </button>
@@ -171,7 +171,7 @@ export default function YachtsPage() {
             <button
               type="button"
               onClick={() => setShowAddYacht(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
             >
               <span className="text-base leading-none">+</span>
               Nuevo yate

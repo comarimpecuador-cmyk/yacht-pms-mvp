@@ -26,6 +26,12 @@ const config: Config = {
           light: '#E2E8F0',
         },
         // Accents
+        accent: {
+          DEFAULT: '#0F4C81',
+          hover: '#0C3D67',
+          subtle: '#E9F1F8',
+          foreground: '#FFFFFF',
+        },
         gold: {
           DEFAULT: '#D4AF37',
           hover: '#C5A028',

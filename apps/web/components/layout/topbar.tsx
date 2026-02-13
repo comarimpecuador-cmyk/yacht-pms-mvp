@@ -19,7 +19,11 @@ interface InAppNotification {
   createdAt: string;
 }
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuToggle?: () => void;
+}
+
+export function TopBar({ onMenuToggle }: TopBarProps) {
   const { currentYacht, yachts, selectYacht, loadYachts, isLoading: yachtsLoading } = useYacht();
   const { user, logout } = useAuth();
   const pathname = usePathname();
@@ -108,19 +112,34 @@ export function TopBar() {
   const unreadCount = notifications.filter((item) => item.status !== 'read').length;
 
   return (
-    <header className="h-16 border-b border-border bg-surface px-4 flex items-center justify-between">
-      {/* Yacht Selector */}
-      <div className="relative" ref={yachtDropdownRef}>
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-surface/95 px-3 backdrop-blur sm:px-4">
+      <div className="flex min-w-0 items-center gap-2">
+        {onMenuToggle ? (
+          <button
+            type="button"
+            onClick={onMenuToggle}
+            className="inline-flex h-10 w-10 items-center justify-center border border-border bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary lg:hidden"
+            aria-label="Abrir menu"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+        ) : null}
+
+        {/* Yacht Selector */}
+        <div className="relative min-w-0" ref={yachtDropdownRef}>
         <button
+          type="button"
           onClick={() => setYachtDropdownOpen(!yachtDropdownOpen)}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-hover transition-colors"
+          className="flex min-w-0 items-center gap-3 border border-border bg-surface px-3 py-2 hover:bg-surface-hover"
         >
           {yachtsLoading ? (
             <div className="h-6 w-32 bg-surface-hover animate-pulse rounded" />
           ) : currentYacht ? (
             <>
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-medium text-text-primary">
+              <div className="flex min-w-0 flex-col items-start">
+                <span className="max-w-[9rem] truncate text-sm font-medium text-text-primary sm:max-w-[16rem]">
                   {currentYacht.name}
                 </span>
                 <span className="text-xs text-text-secondary">
@@ -182,12 +201,14 @@ export function TopBar() {
           </div>
         )}
       </div>
+      </div>
 
       {/* Right Section: Notifications, Theme, User */}
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {/* Notifications */}
         <div className="relative" ref={notificationsRef}>
           <button
+            type="button"
             onClick={() => setNotificationsOpen(!notificationsOpen)}
             className="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
             aria-label="Notifications"
@@ -273,6 +294,7 @@ export function TopBar() {
         {/* User Menu */}
         <div className="relative" ref={userDropdownRef}>
           <button
+            type="button"
             onClick={() => setUserDropdownOpen(!userDropdownOpen)}
             className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-hover transition-colors"
           >
@@ -338,6 +360,7 @@ export function TopBar() {
               )}
               <div className="border-t border-border mt-1 pt-1">
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-text-primary hover:bg-surface-hover transition-colors"
                 >
