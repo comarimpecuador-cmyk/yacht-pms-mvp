@@ -81,6 +81,19 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
     return () => clearInterval(interval);
   }, [user, pathname]);
 
+  useEffect(() => {
+    if (!notificationsOpen) return;
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    if (!isMobile) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [notificationsOpen]);
+
   const handleYachtSelect = (yachtId: string) => {
     selectYacht(yachtId);
     setYachtDropdownOpen(false);
@@ -210,79 +223,110 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
           <button
             type="button"
             onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
             aria-label="Notifications"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full border border-surface bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
 
           {notificationsOpen && (
-            <div className="absolute top-full right-0 mt-1 w-80 bg-surface border border-border rounded-lg shadow-lg py-4 z-50">
-              <div className="px-4 pb-2 border-b border-border">
-                <h3 className="font-medium text-text-primary">{translate('notifications.title')}</h3>
-              </div>
-              {notificationsLoading ? (
-                <div className="py-8 text-center text-text-secondary text-sm">Cargando...</div>
-              ) : notifications.length === 0 ? (
-                <div className="py-8 text-center text-text-secondary text-sm">
-                  {translate('common.noResults')}
+            <div className="fixed inset-0 z-50 bg-background sm:absolute sm:inset-auto sm:top-full sm:right-0 sm:mt-1 sm:w-96 sm:rounded-lg sm:border sm:border-border sm:bg-surface sm:shadow-lg">
+              <div className="flex h-full flex-col">
+                <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNotificationsOpen(false)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary sm:hidden"
+                      aria-label="Volver"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <h3 className="text-base font-semibold text-text-primary">{translate('notifications.title')}</h3>
+                    {unreadCount > 0 ? (
+                      <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
+                        {unreadCount} nuevas
+                      </span>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNotificationsOpen(false)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+                    aria-label="Cerrar notificaciones"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M6 18L18 6" />
+                    </svg>
+                  </button>
                 </div>
-              ) : (
-                <ul className="max-h-80 overflow-y-auto divide-y divide-border">
-                  {notifications.map((item) => {
-                    const title = typeof item.payload?.title === 'string'
-                      ? item.payload.title
-                      : 'Notificacion';
-                    const subtitle = typeof item.payload?.message === 'string'
-                      ? item.payload.message
-                      : typeof item.payload?.description === 'string'
-                        ? item.payload.description
-                      : typeof item.payload?.reason === 'string'
-                        ? item.payload.reason
-                        : 'Sin detalle adicional';
 
-                    return (
-                      <li key={item.id} className="px-4 py-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-text-primary">{title}</p>
-                            {subtitle && (
-                              <p className="truncate text-xs text-text-secondary">{subtitle}</p>
+                {notificationsLoading ? (
+                  <div className="py-8 text-center text-text-secondary text-sm">Cargando...</div>
+                ) : notifications.length === 0 ? (
+                  <div className="flex-1 py-8 text-center text-text-secondary text-sm">
+                    {translate('common.noResults')}
+                  </div>
+                ) : (
+                  <ul className="flex-1 divide-y divide-border overflow-y-auto">
+                    {notifications.map((item) => {
+                      const title = typeof item.payload?.title === 'string'
+                        ? item.payload.title
+                        : 'Notificacion';
+                      const subtitle = typeof item.payload?.message === 'string'
+                        ? item.payload.message
+                        : typeof item.payload?.description === 'string'
+                          ? item.payload.description
+                        : typeof item.payload?.reason === 'string'
+                          ? item.payload.reason
+                          : 'Sin detalle adicional';
+
+                      return (
+                        <li key={item.id} className="px-4 py-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-text-primary">{title}</p>
+                              {subtitle && (
+                                <p className="truncate text-xs text-text-secondary">{subtitle}</p>
+                              )}
+                              <p className="mt-1 text-[11px] text-text-muted">
+                                {new Date(item.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                            {item.status !== 'read' && (
+                              <button
+                                type="button"
+                                onClick={() => markNotificationRead(item.id)}
+                                className="shrink-0 rounded border border-border px-2 py-1 text-[11px] text-text-primary hover:bg-surface-hover"
+                              >
+                                Leida
+                              </button>
                             )}
-                            <p className="mt-1 text-[11px] text-text-muted">
-                              {new Date(item.createdAt).toLocaleString()}
-                            </p>
                           </div>
-                          {item.status !== 'read' && (
-                            <button
-                              type="button"
-                              onClick={() => markNotificationRead(item.id)}
-                              className="shrink-0 rounded border border-border px-2 py-1 text-[11px] text-text-primary hover:bg-surface-hover"
-                            >
-                              Leida
-                            </button>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <div className="border-t border-border mt-2 px-4 pt-2">
-                <Link
-                  href="/settings/notifications"
-                  onClick={() => setNotificationsOpen(false)}
-                  className="text-xs text-info hover:underline"
-                >
-                  Configurar notificaciones
-                </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                <div className="border-t border-border px-4 py-3">
+                  <Link
+                    href="/settings/notifications"
+                    onClick={() => setNotificationsOpen(false)}
+                    className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-hover sm:w-auto"
+                  >
+                    Configurar notificaciones
+                  </Link>
+                </div>
               </div>
             </div>
           )}
