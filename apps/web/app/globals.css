@@ -78,13 +78,26 @@
   }
 
   .menu-item-active {
-    @apply bg-accent/10 font-semibold text-accent shadow-[inset_3px_0_0_0_rgba(15,76,129,0.75)];
+    @apply border border-accent/60 bg-accent/15 font-semibold text-accent shadow-[inset_4px_0_0_0_rgba(15,76,129,0.95),0_8px_20px_rgba(15,76,129,0.22)];
+  }
+
+  .dark .menu-item-active {
+    @apply border-accent/80 bg-accent text-white shadow-[inset_4px_0_0_0_rgba(255,255,255,0.95),0_8px_24px_rgba(15,76,129,0.45)];
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 
   /* Legacy utilities: keep old pages readable in dark mode without touching every file. */

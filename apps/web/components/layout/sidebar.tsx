@@ -131,7 +131,7 @@ export function Sidebar({ onNavigate, showMobileHeader = false }: SidebarProps) 
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4">
+      <nav className="scrollbar-hide flex-1 overflow-y-auto py-4">
         <div className="px-4 pb-2">
           <div className="menu-section-title">{translate('nav.general')}</div>
           <ul className="space-y-1">
