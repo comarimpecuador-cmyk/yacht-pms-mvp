@@ -84,9 +84,6 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
   useEffect(() => {
     if (!notificationsOpen) return;
 
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-    if (!isMobile) return;
-
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -237,14 +234,14 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
           </button>
 
           {notificationsOpen && (
-            <div className="fixed inset-0 z-50 bg-background sm:absolute sm:inset-auto sm:top-full sm:right-0 sm:mt-1 sm:w-96 sm:rounded-lg sm:border sm:border-border sm:bg-surface sm:shadow-lg">
+            <div className="fixed inset-0 z-50 bg-background">
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setNotificationsOpen(false)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary sm:hidden"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary"
                       aria-label="Volver"
                     >
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -322,7 +319,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
                   <Link
                     href="/settings/notifications"
                     onClick={() => setNotificationsOpen(false)}
-                    className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-hover sm:w-auto"
+                    className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-hover"
                   >
                     Configurar notificaciones
                   </Link>
