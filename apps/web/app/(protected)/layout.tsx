@@ -44,7 +44,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
           <div className="flex min-w-0 flex-1 flex-col">
             <TopBar onMenuToggle={() => setMobileMenuOpen(true)} />
             <main className="flex-1 overflow-auto bg-background px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-              {children}
+              <div className="app-page">{children}</div>
             </main>
           </div>
         </div>

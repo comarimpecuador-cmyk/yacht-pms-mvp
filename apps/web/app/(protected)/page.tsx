@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -25,14 +25,10 @@ function YachtCard({
     : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(yacht.id)}
-      className="w-full rounded-xl border border-border bg-surface p-5 text-left transition hover:shadow-md"
-    >
+    <article className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-accent/40 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold text-text-primary">{yacht.name}</h3>
+        <div className="min-w-0">
+          <h3 className="truncate text-lg font-semibold text-text-primary">{yacht.name}</h3>
           <p className="mt-1 text-sm text-text-secondary">{formatFlagLabel(yacht.flag)}</p>
           {yacht.imoOptional ? (
             <p className="mt-1 text-xs text-text-muted">IMO: {yacht.imoOptional}</p>
@@ -44,22 +40,25 @@ function YachtCard({
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
-        <span className="text-sm text-text-secondary">Entrar al panel de este yate</span>
-        <span className="text-sm font-medium text-accent">Abrir</span>
+        <button
+          type="button"
+          onClick={() => onSelect(yacht.id)}
+          className="inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-hover"
+        >
+          Entrar al yate
+          <span aria-hidden>→</span>
+        </button>
         {isSystemAdmin && (
           <button
             type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit(yacht);
-            }}
-            className="ml-auto rounded-lg border border-border px-3 py-1.5 text-xs text-text-primary hover:bg-surface-hover"
+            onClick={() => onEdit(yacht)}
+            className="rounded-lg border border-border px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"
           >
             Editar
           </button>
         )}
       </div>
-    </button>
+    </article>
   );
 }
 
@@ -114,126 +113,127 @@ export default function YachtsPage() {
 
   if (yachts.length === 0) {
     return (
-      <section className="flex min-h-[60vh] items-center justify-center">
-        <div className="mx-auto max-w-lg rounded-xl border border-border bg-surface p-6 text-center">
-          <h1 className="text-2xl font-semibold text-text-primary">Sin yates asignados</h1>
-          <p className="mt-2 text-sm text-text-secondary">
-            Todavia no tienes acceso a yates. Si eres SystemAdmin, crea uno para empezar.
-          </p>
+      <section className="page-shell mx-auto max-w-2xl text-center">
+        <h1 className="page-title">Sin yates asignados</h1>
+        <p className="mt-2 page-subtitle">
+          Todavia no tienes acceso a yates. Si eres SystemAdmin, crea uno para empezar.
+        </p>
 
-          <div className="mt-6 flex flex-col-reverse items-stretch justify-center gap-2 sm:flex-row">
-            {isSystemAdmin && (
-              <button
-                type="button"
-                onClick={() => setShowAddYacht(true)}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
-              >
-                Crear yate
-              </button>
-            )}
+        <div className="mt-6 flex flex-col-reverse items-stretch justify-center gap-2 sm:flex-row">
+          {isSystemAdmin && (
             <button
               type="button"
-              onClick={() => {
-                logout();
-              }}
-              className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-surface-hover"
+              onClick={() => setShowAddYacht(true)}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
             >
-              Cerrar sesion
+              Crear yate
             </button>
-          </div>
-
-          {showAddYacht && (
-            <AddYachtModal
-              onClose={() => setShowAddYacht(false)}
-              onSuccess={async () => {
-                setShowAddYacht(false);
-                await loadYachts();
-              }}
-            />
           )}
+          <button
+            type="button"
+            onClick={logout}
+            className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary hover:bg-surface-hover"
+          >
+            Cerrar sesion
+          </button>
         </div>
+
+        {showAddYacht && (
+          <AddYachtModal
+            onClose={() => setShowAddYacht(false)}
+            onSuccess={async () => {
+              setShowAddYacht(false);
+              await loadYachts();
+            }}
+          />
+        )}
       </section>
     );
   }
 
   return (
     <section className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-text-primary">Gestion de yates</h1>
-          <p className="text-sm text-text-secondary">
-            Selecciona un yate para entrar a su modulo. SystemAdmin puede editar bandera, estado e informacion general.
-          </p>
-        </div>
+      <header className="page-shell">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="page-title">Seleccion de yates</h1>
+            <p className="page-subtitle">
+              Elige un yate para entrar rapido a su operacion diaria.
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
           {isSystemAdmin && (
             <button
               type="button"
               onClick={() => setShowAddYacht(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
             >
               <span className="text-base leading-none">+</span>
               Nuevo yate
             </button>
           )}
         </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+            <span className="text-xs text-text-secondary">Total</span>
+            <span className="text-sm font-semibold text-text-primary">{yachts.length}</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+            <span className="text-xs text-text-secondary">Activos</span>
+            <span className="text-sm font-semibold text-text-primary">{activeCount}</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+            <span className="text-xs text-text-secondary">Inactivos</span>
+            <span className="text-sm font-semibold text-text-primary">{inactiveCount}</span>
+          </div>
+
+          {isSystemAdmin && (
+            <div className="inline-flex items-center rounded-lg border border-border bg-background p-1 sm:ml-auto">
+              <button
+                type="button"
+                onClick={() => setFilter('all')}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                  filter === 'all'
+                    ? 'bg-accent/15 text-accent'
+                    : 'text-text-secondary hover:bg-surface-hover'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilter('active')}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                  filter === 'active'
+                    ? 'bg-accent/15 text-accent'
+                    : 'text-text-secondary hover:bg-surface-hover'
+                }`}
+              >
+                Activos
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilter('inactive')}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                  filter === 'inactive'
+                    ? 'bg-accent/15 text-accent'
+                    : 'text-text-secondary hover:bg-surface-hover'
+                }`}
+              >
+                Inactivos
+              </button>
+            </div>
+          )}
+        </div>
       </header>
-
-      <div className="grid grid-cols-1 gap-3 sm:max-w-xl sm:grid-cols-3">
-        <div className="rounded-lg border border-border bg-surface p-3">
-          <p className="text-xs text-text-secondary">Total</p>
-          <p className="text-lg font-semibold text-text-primary">{yachts.length}</p>
-        </div>
-        <div className="rounded-lg border border-border bg-surface p-3">
-          <p className="text-xs text-text-secondary">Activos</p>
-          <p className="text-lg font-semibold text-text-primary">{activeCount}</p>
-        </div>
-        <div className="rounded-lg border border-border bg-surface p-3">
-          <p className="text-xs text-text-secondary">Inactivos</p>
-          <p className="text-lg font-semibold text-text-primary">{inactiveCount}</p>
-        </div>
-      </div>
-
-      {isSystemAdmin && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-3">
-          <span className="text-xs text-text-secondary">Filtro:</span>
-          <button
-            type="button"
-            onClick={() => setFilter('all')}
-            className={`rounded-md px-3 py-1.5 text-xs ${
-              filter === 'all' ? 'bg-accent/15 text-accent' : 'text-text-secondary hover:bg-surface-hover'
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('active')}
-            className={`rounded-md px-3 py-1.5 text-xs ${
-              filter === 'active' ? 'bg-accent/15 text-accent' : 'text-text-secondary hover:bg-surface-hover'
-            }`}
-          >
-            Solo activos
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('inactive')}
-            className={`rounded-md px-3 py-1.5 text-xs ${
-              filter === 'inactive' ? 'bg-accent/15 text-accent' : 'text-text-secondary hover:bg-surface-hover'
-            }`}
-          >
-            Solo inactivos
-          </button>
-        </div>
-      )}
 
       {yachtsVisible.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-4 text-sm text-text-secondary">
           No hay yates para el filtro seleccionado.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
           {yachtsVisible.map((yacht) => (
             <YachtCard
               key={yacht.id}
