@@ -61,11 +61,25 @@
   }
 
   .kpi-grid {
-    @apply grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))];
+    @apply grid gap-2 sm:gap-3 [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))];
   }
 
   .kpi-card {
-    @apply rounded-xl border border-border bg-surface px-3 py-3 sm:px-4;
+    @apply rounded-xl border border-border bg-surface px-2.5 py-2.5 sm:px-3.5 sm:py-3;
+  }
+
+  .kpi-row-mobile {
+    @apply flex gap-2 overflow-x-auto pb-1 sm:grid sm:gap-3 sm:overflow-visible sm:pb-0 [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))];
+  }
+
+  .kpi-row-mobile > * {
+    min-width: 148px;
+  }
+
+  @screen sm {
+    .kpi-row-mobile > * {
+      min-width: 0;
+    }
   }
 
   .kpi-card-accent {
@@ -81,15 +95,15 @@
   }
 
   .kpi-label {
-    @apply text-[11px] font-medium uppercase tracking-wide text-text-secondary;
+    @apply text-[10px] font-medium uppercase tracking-wide text-text-secondary;
   }
 
   .kpi-value {
-    @apply mt-1 text-xl font-semibold text-text-primary;
+    @apply mt-0.5 text-lg font-semibold text-text-primary sm:text-xl;
   }
 
   .kpi-detail {
-    @apply mt-1 text-[11px] text-text-muted;
+    @apply mt-0.5 text-[10px] text-text-muted;
   }
 
   .menu-section-title {

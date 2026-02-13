@@ -275,7 +275,7 @@ export default function TimelinePage() {
           </div>
         </div>
 
-        <div className="kpi-grid">
+        <div className="kpi-row-mobile">
           <div className="kpi-card">
             <p className="kpi-label">Total</p>
             <p className="kpi-value">{counters.total}</p>

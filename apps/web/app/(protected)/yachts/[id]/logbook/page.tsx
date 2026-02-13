@@ -383,7 +383,7 @@ export default function YachtLogbookTimelinePage() {
             <p className="mt-1 text-xs text-text-muted">Yate: {currentYacht?.name ?? 'Cargando...'}</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
             <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
               <button
                 type="button"
@@ -423,7 +423,7 @@ export default function YachtLogbookTimelinePage() {
               <button
                 type="button"
                 onClick={onOpenCreate}
-                className="rounded-lg bg-gold px-4 py-2 text-sm font-medium text-black hover:bg-gold-hover"
+                className="rounded-lg bg-gold px-3 py-2 text-sm font-medium text-black hover:bg-gold-hover"
               >
                 Nuevo evento V2
               </button>
@@ -449,6 +449,15 @@ export default function YachtLogbookTimelinePage() {
                 ? 'Esta vista agrupa borradores V2 de cualquier fecha.'
                 : 'Si existen registros legacy, se mostraran automaticamente por fallback.'}
             </p>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={onOpenCreate}
+                className="mt-4 inline-flex items-center justify-center rounded-lg bg-gold px-4 py-2 text-sm font-medium text-black hover:bg-gold-hover"
+              >
+                Crear primer evento
+              </button>
+            )}
           </div>
         ) : (
           <div className="relative ml-4 space-y-6 border-l border-border pl-7">

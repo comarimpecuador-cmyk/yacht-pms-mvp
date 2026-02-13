@@ -332,7 +332,7 @@ export default function YachtHrmPage() {
 
       {error && <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
-      <div className="kpi-grid">
+      <div className="kpi-row-mobile">
         <div className="kpi-card">
           <p className="kpi-label">Horarios</p>
           <p className="kpi-value">{schedules.length}</p>

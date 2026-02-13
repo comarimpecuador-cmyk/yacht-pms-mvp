@@ -169,7 +169,7 @@ export default function YachtHomePage() {
     return (
       <div className="space-y-4">
         <div className="h-8 w-64 animate-pulse rounded bg-surface-hover" />
-        <div className="kpi-grid">
+        <div className="kpi-row-mobile">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="h-24 animate-pulse rounded-xl bg-surface-hover" />
           ))}
@@ -203,7 +203,7 @@ export default function YachtHomePage() {
         </div>
       )}
 
-      <section className="kpi-grid">
+      <section className="kpi-row-mobile">
         <StatCard
           title="Alertas activas"
           value={String(summary?.stats.alerts ?? 0)}

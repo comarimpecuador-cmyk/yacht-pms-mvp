@@ -175,7 +175,7 @@ export default function YachtsPage() {
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="kpi-grid">
+          <div className="kpi-row-mobile">
             <div className="kpi-card">
               <p className="kpi-label">Total</p>
               <p className="kpi-value">{yachts.length}</p>

@@ -342,7 +342,7 @@ export default function YachtInventoryPage() {
         </div>
       </header>
 
-      <section className="kpi-grid">
+      <section className="kpi-row-mobile">
         <div className="kpi-card">
           <p className="kpi-label">Items</p>
           <p className="kpi-value">{total}</p>

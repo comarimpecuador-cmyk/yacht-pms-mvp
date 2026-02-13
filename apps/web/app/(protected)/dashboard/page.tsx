@@ -104,7 +104,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="kpi-grid">
+      <div className="kpi-row-mobile">
         <div className="kpi-card">
           <p className="kpi-label">Usuario</p>
           <p className="mt-1 truncate text-sm font-medium text-text-primary">{user?.email || '-'}</p>
