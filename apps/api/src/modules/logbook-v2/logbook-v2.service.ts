@@ -10,6 +10,7 @@ import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import { LogBookStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
+import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { classifyLegacyText } from './classification';
 import {
@@ -114,6 +115,7 @@ export class LogbookV2Service {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly notificationsService: NotificationsService,
+    private readonly notificationRulesService: NotificationRulesService,
   ) {
     const ajv = new Ajv2020({ allErrors: true, strict: false });
     addFormats(ajv);
@@ -555,6 +557,20 @@ export class LogbookV2Service {
         }),
       ),
     );
+
+    await this.notificationRulesService.dispatchCandidates([
+      {
+        type: `logbook_v2.${action}`,
+        module: 'logbook',
+        yachtId: event.yachtId,
+        entityType: 'LogbookEventV2',
+        entityId: event.id,
+        severity: this.mapEventSeverity(event.severity),
+        payload: payload as Record<string, unknown>,
+        assigneeUserId: recipients[0] ?? null,
+        occurredAt: new Date(),
+      },
+    ]);
   }
 
   private async resolveNotificationRecipients(yachtId: string): Promise<string[]> {
@@ -577,6 +593,12 @@ export class LogbookV2Service {
     ]);
 
     return Array.from(new Set([...yachtAccessUsers.map((row) => row.userId), ...systemAdmins.map((row) => row.id)]));
+  }
+
+  private mapEventSeverity(value: string): 'info' | 'warn' | 'critical' {
+    if (value === 'critical') return 'critical';
+    if (value === 'warn') return 'warn';
+    return 'info';
   }
 
   private validatePayload(payloadUnknown: unknown): LogbookV2EventPayload {

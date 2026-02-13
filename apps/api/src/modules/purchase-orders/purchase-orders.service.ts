@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, PurchaseOrderStatus } from '@prisma/client';
 import { AlertsService } from '../alerts/alerts.service';
+import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../../prisma.service';
 import { StorageService } from '../../storage/storage.service';
@@ -55,6 +56,7 @@ export class PurchaseOrdersService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly alertsService: AlertsService,
+    private readonly notificationRulesService: NotificationRulesService,
     private readonly storageService: StorageService,
   ) {}
 
@@ -226,6 +228,26 @@ export class PurchaseOrdersService {
         }),
       ),
     );
+
+    await this.notificationRulesService.dispatchCandidates([
+      {
+        type,
+        module: 'purchase_orders',
+        yachtId,
+        entityType: 'PurchaseOrder',
+        entityId: typeof payload.purchaseOrderId === 'string' ? payload.purchaseOrderId : undefined,
+        severity: this.resolveNotificationSeverity(type),
+        payload: payload as Record<string, unknown>,
+        assigneeUserId: uniqueUsers[0] ?? null,
+        occurredAt: new Date(),
+      },
+    ]);
+  }
+
+  private resolveNotificationSeverity(type: string): 'info' | 'warn' | 'critical' {
+    if (type.includes('cancelled')) return 'critical';
+    if (type.includes('submitted')) return 'warn';
+    return 'info';
   }
 
   private async createAudit(

@@ -12,6 +12,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { AlertsService } from '../alerts/alerts.service';
+import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../../prisma.service';
 import { StorageService } from '../../storage/storage.service';
@@ -41,6 +42,7 @@ export class DocumentsService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly alertsService: AlertsService,
+    private readonly notificationRulesService: NotificationRulesService,
     private readonly storageService: StorageService,
   ) {}
 
@@ -324,6 +326,26 @@ export class DocumentsService {
         }),
       ),
     );
+
+    await this.notificationRulesService.dispatchCandidates([
+      {
+        type,
+        module: 'documents',
+        yachtId,
+        entityType: 'Document',
+        entityId: typeof payload.documentId === 'string' ? payload.documentId : undefined,
+        severity: this.resolveNotificationSeverity(type),
+        payload: payload as Record<string, unknown>,
+        assigneeUserId: uniqueUsers[0] ?? null,
+        occurredAt: new Date(),
+      },
+    ]);
+  }
+
+  private resolveNotificationSeverity(type: string): 'info' | 'warn' | 'critical' {
+    if (type.includes('expired') || type.includes('rejected')) return 'critical';
+    if (type.includes('expiring') || type.includes('submitted')) return 'warn';
+    return 'info';
   }
 
   private async resolveDocumentAlert(documentId: string) {

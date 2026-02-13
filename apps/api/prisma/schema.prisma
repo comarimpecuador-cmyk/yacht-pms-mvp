@@ -19,6 +19,8 @@ model User {
   alertsAssigned         Alert[]                 @relation("AlertAssignee")
   notificationPreference NotificationPreference?
   notificationEvents     NotificationEvent[]
+  notificationRulesCreated NotificationRule[]    @relation("NotificationRuleCreator")
+  jobDefinitionsCreated   JobDefinition[]        @relation("JobDefinitionCreator")
   logBookEntries         LogBookEntry[]          @relation("UserCreatedLogBooks")
   yachtAccesses          UserYachtAccess[]
   assignedDocuments      Document[]              @relation("DocumentAssignee")
@@ -43,6 +45,8 @@ model Yacht {
   alerts            Alert[]
   notificationPrefs NotificationPreferenceYacht[]
   notificationLogs  NotificationEvent[]
+  notificationRules NotificationRule[]
+  jobDefinitions    JobDefinition[]
   engines           Engine[]
   logBookEntries    LogBookEntry[]
   documents         Document[]
@@ -136,6 +140,130 @@ model NotificationEvent {
 
   @@index([userId, status])
   @@index([dedupeKey, channel, createdAt])
+}
+
+enum NotificationRuleScopeType {
+  fleet
+  yacht
+  entity
+}
+
+enum NotificationRuleCadenceMode {
+  once
+  hourly
+  daily
+  every_n_hours
+  every_n_days
+}
+
+enum NotificationRuleRecipientMode {
+  roles
+  users
+  assignee
+  role_then_escalate
+}
+
+model NotificationRule {
+  id                String                        @id @default(uuid())
+  name              String
+  module            String
+  eventType         String
+  scopeType         NotificationRuleScopeType     @default(fleet)
+  yachtId           String?
+  yacht             Yacht?                        @relation(fields: [yachtId], references: [id], onDelete: SetNull)
+  entityType        String?
+  entityId          String?
+  conditionsJson    Json
+  cadenceMode       NotificationRuleCadenceMode   @default(daily)
+  cadenceValue      Int?
+  channels          String[]
+  minSeverity       String                        @default("info")
+  templateTitle     String
+  templateMessage   String
+  recipientMode     NotificationRuleRecipientMode @default(roles)
+  recipientRoles    String[]
+  recipientUserIds  String[]
+  escalationRoles   String[]
+  dedupeWindowHours Int                           @default(24)
+  isActive          Boolean                       @default(true)
+  lastTriggeredAt   DateTime?
+  createdByUserId   String
+  createdByUser     User                          @relation("NotificationRuleCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+
+  @@index([eventType, isActive])
+  @@index([module, isActive])
+  @@index([yachtId, isActive])
+  @@index([createdByUserId])
+}
+
+enum JobScheduleType {
+  interval_hours
+  interval_days
+  cron
+}
+
+enum JobStatus {
+  active
+  paused
+  archived
+}
+
+enum JobRunStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+model JobDefinition {
+  id                   String          @id @default(uuid())
+  title                String
+  module               String
+  yachtId              String?
+  yacht                Yacht?          @relation(fields: [yachtId], references: [id], onDelete: SetNull)
+  instructionsTemplate String
+  scheduleType         JobScheduleType
+  cronExpression       String?
+  intervalHours        Int?
+  intervalDays         Int?
+  timezone             String          @default("UTC")
+  assignmentMode       String
+  assignmentRoles      String[]
+  assignmentUserIds    String[]
+  remindersJson        Json
+  status               JobStatus       @default(active)
+  nextRunAt            DateTime?
+  lastRunAt            DateTime?
+  createdByUserId      String
+  createdByUser        User            @relation("JobDefinitionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  runs                 JobRun[]
+
+  @@index([module, status])
+  @@index([yachtId, status])
+  @@index([nextRunAt, status])
+  @@index([createdByUserId])
+}
+
+model JobRun {
+  id              String       @id @default(uuid())
+  jobDefinitionId String
+  jobDefinition   JobDefinition @relation(fields: [jobDefinitionId], references: [id], onDelete: Cascade)
+  scheduledAt     DateTime
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  status          JobRunStatus
+  dedupeKey       String
+  summaryJson     Json?
+  createdAt       DateTime     @default(now())
+
+  @@index([jobDefinitionId, scheduledAt])
+  @@index([status, scheduledAt])
+  @@index([dedupeKey])
 }
 
 model AuditEvent {

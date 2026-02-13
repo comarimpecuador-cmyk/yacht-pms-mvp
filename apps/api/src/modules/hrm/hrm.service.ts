@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { HrmLeaveStatus, HrmPayrollStatus, Prisma } from '@prisma/client';
 import { AlertsService } from '../alerts/alerts.service';
+import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../../prisma.service';
 import {
@@ -27,6 +28,7 @@ export class HrmService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly alertsService: AlertsService,
+    private readonly notificationRulesService: NotificationRulesService,
   ) {}
 
   private assertYachtScope(yachtId: string, yachtIds: string[]) {
@@ -118,6 +120,33 @@ export class HrmService {
         }),
       ),
     );
+
+    await this.notificationRulesService.dispatchCandidates([
+      {
+        type,
+        module: 'hrm',
+        yachtId,
+        entityType: 'Hrm',
+        entityId:
+          typeof payload.leaveId === 'string'
+            ? payload.leaveId
+            : typeof payload.payrollId === 'string'
+              ? payload.payrollId
+              : typeof payload.scheduleId === 'string'
+                ? payload.scheduleId
+                : undefined,
+        severity: this.resolveNotificationSeverity(type),
+        payload: payload as Record<string, unknown>,
+        assigneeUserId: uniqueUsers[0] ?? null,
+        occurredAt: new Date(),
+      },
+    ]);
+  }
+
+  private resolveNotificationSeverity(type: string): 'info' | 'warn' | 'critical' {
+    if (type.includes('non_compliance') || type.includes('rejected')) return 'critical';
+    if (type.includes('pending') || type.includes('rest_')) return 'warn';
+    return 'info';
   }
 
   status() {

@@ -9,6 +9,20 @@ type ProviderResult =
   | { status: 'skipped'; reason?: string }
   | { status: 'failed'; error: string };
 
+type SeverityLevel = 'info' | 'warn' | 'critical';
+type ChannelKind = 'in_app' | 'email' | 'push_future';
+
+type ResolvedPreference = {
+  timezone: string;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  pushFuture: boolean;
+  windowStart: string;
+  windowEnd: string;
+  minSeverity: SeverityLevel;
+  yachtsScope: string[];
+};
+
 function normalizeResult(result: any): ProviderResult {
   if (!result || typeof result !== 'object') return { status: 'failed', error: 'provider_returned_invalid_result' };
 
@@ -62,6 +76,57 @@ export class NotificationsService {
     });
   }
 
+  async maybeSendInApp(input: {
+    userId: string;
+    yachtId?: string;
+    type: string;
+    dedupeKey: string;
+    severity: SeverityLevel;
+    payload: Prisma.JsonObject;
+    dedupeWindowHours?: number;
+  }) {
+    const preference = await this.resolvePreference(input.userId);
+    const blockedReason = this.getChannelBlockReason(preference, input.severity, input.yachtId, 'in_app');
+
+    if (blockedReason) {
+      return this.createSkippedEvent({
+        userId: input.userId,
+        yachtId: input.yachtId,
+        channel: 'in_app',
+        type: input.type,
+        dedupeKey: input.dedupeKey,
+        payload: input.payload,
+        reason: blockedReason,
+      });
+    }
+
+    const dedupeWindowHours = Math.max(1, Math.min(input.dedupeWindowHours ?? 24, 24 * 7));
+    const since = new Date(Date.now() - dedupeWindowHours * 60 * 60 * 1000);
+
+    const existing = await this.prisma.notificationEvent.findFirst({
+      where: {
+        userId: input.userId,
+        channel: 'in_app',
+        dedupeKey: input.dedupeKey,
+        createdAt: { gte: since },
+        status: { in: ['sent', 'read'] },
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return { status: 'skipped' as const, reason: 'dedupe_window' };
+    }
+
+    return this.createInApp({
+      userId: input.userId,
+      yachtId: input.yachtId,
+      type: input.type,
+      dedupeKey: input.dedupeKey,
+      payload: input.payload,
+    });
+  }
+
   async maybeSendEmail(input: {
     userId: string;
     yachtId?: string;
@@ -70,11 +135,26 @@ export class NotificationsService {
     severity: 'info' | 'warn' | 'critical';
     payload: Prisma.JsonObject;
   }) {
-    const since = new Date();
-    since.setHours(0, 0, 0, 0);
+    const preference = await this.resolvePreference(input.userId);
+    const blockedReason = this.getChannelBlockReason(preference, input.severity, input.yachtId, 'email');
+
+    if (blockedReason) {
+      return this.createSkippedEvent({
+        userId: input.userId,
+        yachtId: input.yachtId,
+        channel: 'email',
+        type: input.type,
+        dedupeKey: input.dedupeKey,
+        payload: input.payload,
+        reason: blockedReason,
+      });
+    }
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const existing = await this.prisma.notificationEvent.findFirst({
       where: {
+        userId: input.userId,
         channel: 'email',
         dedupeKey: input.dedupeKey,
         createdAt: { gte: since },
@@ -83,7 +163,7 @@ export class NotificationsService {
     });
 
     if (existing) {
-      return { status: 'skipped_daily_dedupe' };
+      return { status: 'skipped' as const, reason: 'dedupe_window' };
     }
 
     const raw = await this.emailProvider.send({
@@ -107,7 +187,12 @@ export class NotificationsService {
         status: result.status === 'failed' ? 'failed' : result.status === 'sent' ? 'sent' : 'skipped',
         dedupeKey: input.dedupeKey,
         sentAt: result.status === 'sent' ? new Date() : null,
-        error: result.status === 'failed' ? result.error : null,
+        error:
+          result.status === 'failed'
+            ? result.error
+            : result.status === 'skipped'
+              ? result.reason ?? null
+              : null,
       },
     });
   }
@@ -120,6 +205,37 @@ export class NotificationsService {
     severity: 'info' | 'warn' | 'critical';
     payload: Prisma.JsonObject;
   }) {
+    const preference = await this.resolvePreference(input.userId);
+    const blockedReason = this.getChannelBlockReason(preference, input.severity, input.yachtId, 'push_future');
+
+    if (blockedReason) {
+      return this.createSkippedEvent({
+        userId: input.userId,
+        yachtId: input.yachtId,
+        channel: 'push_future',
+        type: input.type,
+        dedupeKey: input.dedupeKey,
+        payload: input.payload,
+        reason: blockedReason,
+      });
+    }
+
+    const since = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    const existing = await this.prisma.notificationEvent.findFirst({
+      where: {
+        userId: input.userId,
+        channel: 'push_future',
+        dedupeKey: input.dedupeKey,
+        createdAt: { gte: since },
+        status: 'sent',
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return { status: 'skipped' as const, reason: 'dedupe_window' };
+    }
+
     const raw = await this.pushProvider.send({ ...input });
     const result = normalizeResult(raw);
 
@@ -133,7 +249,12 @@ export class NotificationsService {
         status: result.status === 'failed' ? 'failed' : result.status === 'sent' ? 'sent' : 'skipped',
         dedupeKey: input.dedupeKey,
         sentAt: result.status === 'sent' ? new Date() : null,
-        error: result.status === 'failed' ? result.error : null,
+        error:
+          result.status === 'failed'
+            ? result.error
+            : result.status === 'skipped'
+              ? result.reason ?? null
+              : null,
       },
     });
   }
@@ -795,5 +916,160 @@ export class NotificationsService {
     if (status === 'closed') return 'Cerrado';
     if (status === 'cancelled') return 'Cancelado';
     return null;
+  }
+
+  private async createSkippedEvent(input: {
+    userId: string;
+    yachtId?: string;
+    channel: ChannelKind;
+    type: string;
+    dedupeKey: string;
+    payload: Prisma.JsonObject;
+    reason: string;
+  }) {
+    return this.prisma.notificationEvent.create({
+      data: {
+        userId: input.userId,
+        yachtId: input.yachtId,
+        channel: input.channel,
+        type: input.type,
+        payload: input.payload,
+        status: 'skipped',
+        dedupeKey: input.dedupeKey,
+        error: input.reason,
+      },
+    });
+  }
+
+  private async resolvePreference(userId: string): Promise<ResolvedPreference> {
+    const preference = await this.prisma.notificationPreference.findUnique({
+      where: { userId },
+      select: {
+        timezone: true,
+        inAppEnabled: true,
+        emailEnabled: true,
+        pushFuture: true,
+        windowStart: true,
+        windowEnd: true,
+        minSeverity: true,
+        yachtsScope: true,
+      },
+    });
+
+    if (!preference) {
+      return {
+        timezone: 'UTC',
+        inAppEnabled: true,
+        emailEnabled: false,
+        pushFuture: false,
+        windowStart: '00:00',
+        windowEnd: '23:59',
+        minSeverity: 'info',
+        yachtsScope: [],
+      };
+    }
+
+    return {
+      timezone: preference.timezone || 'UTC',
+      inAppEnabled: preference.inAppEnabled,
+      emailEnabled: preference.emailEnabled,
+      pushFuture: preference.pushFuture,
+      windowStart: preference.windowStart || '00:00',
+      windowEnd: preference.windowEnd || '23:59',
+      minSeverity: this.normalizeSeverity(preference.minSeverity),
+      yachtsScope: preference.yachtsScope ?? [],
+    };
+  }
+
+  private getChannelBlockReason(
+    preference: ResolvedPreference,
+    severity: SeverityLevel,
+    yachtId: string | undefined,
+    channel: ChannelKind,
+  ): string | null {
+    if (channel === 'in_app' && !preference.inAppEnabled) {
+      return 'channel_disabled_in_app';
+    }
+    if (channel === 'email' && !preference.emailEnabled) {
+      return 'channel_disabled_email';
+    }
+    if (channel === 'push_future' && !preference.pushFuture) {
+      return 'channel_disabled_push';
+    }
+
+    if (this.severityRank(severity) < this.severityRank(preference.minSeverity)) {
+      return 'severity_below_preference';
+    }
+
+    if (preference.yachtsScope.length > 0 && yachtId && !preference.yachtsScope.includes(yachtId)) {
+      return 'yacht_out_of_scope';
+    }
+
+    if (!this.isWithinDeliveryWindow(preference.timezone, preference.windowStart, preference.windowEnd)) {
+      return 'outside_delivery_window';
+    }
+
+    return null;
+  }
+
+  private isWithinDeliveryWindow(timezone: string, windowStart: string, windowEnd: string) {
+    const now = this.getNowInTimezone(timezone);
+    const currentMinutes = now.hours * 60 + now.minutes;
+    const startMinutes = this.parseTimeToMinutes(windowStart);
+    const endMinutes = this.parseTimeToMinutes(windowEnd);
+
+    if (startMinutes === null || endMinutes === null) return true;
+    if (startMinutes === endMinutes) return true;
+
+    if (startMinutes < endMinutes) {
+      return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    }
+    return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+  }
+
+  private parseTimeToMinutes(value: string): number | null {
+    if (!value || typeof value !== 'string') return null;
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    return hours * 60 + minutes;
+  }
+
+  private getNowInTimezone(timezone: string): { hours: number; minutes: number } {
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: timezone || 'UTC',
+      });
+      const parts = formatter.formatToParts(new Date());
+      const hourPart = parts.find((part) => part.type === 'hour')?.value;
+      const minutePart = parts.find((part) => part.type === 'minute')?.value;
+      const hours = Number(hourPart);
+      const minutes = Number(minutePart);
+      if (Number.isFinite(hours) && Number.isFinite(minutes)) {
+        return { hours, minutes };
+      }
+    } catch {
+      // fallback UTC
+    }
+    const now = new Date();
+    return { hours: now.getUTCHours(), minutes: now.getUTCMinutes() };
+  }
+
+  private normalizeSeverity(value: string | null | undefined): SeverityLevel {
+    if (value === 'critical') return 'critical';
+    if (value === 'warn') return 'warn';
+    return 'info';
+  }
+
+  private severityRank(value: SeverityLevel) {
+    if (value === 'critical') return 3;
+    if (value === 'warn') return 2;
+    return 1;
   }
 }

@@ -2,8 +2,8 @@ import {
   Body,
   Controller,
   Get,
-  Param,
   Patch,
+  Param,
   Post,
   Query,
   Req,
@@ -12,12 +12,22 @@ import {
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import {
+  CreateNotificationRuleDto,
+  ListNotificationRulesQueryDto,
+  TestNotificationRuleDto,
+  UpdateNotificationRuleDto,
+} from './dto/notification-rules.dto';
+import { NotificationRulesService } from './notification-rules.service';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly notificationRulesService: NotificationRulesService,
+  ) {}
 
   @Get('in-app')
   @Roles('Chief Engineer', 'Captain', 'HoD', 'Management/Office', 'Crew Member', 'Admin')
@@ -116,5 +126,32 @@ export class NotificationsController {
       userId,
       body,
     );
+  }
+
+  @Get('rules')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  listRules(@Query() query: ListNotificationRulesQueryDto) {
+    return this.notificationRulesService.listRules(query);
+  }
+
+  @Post('rules')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  createRule(
+    @Req() req: { user: { userId: string } },
+    @Body() body: CreateNotificationRuleDto,
+  ) {
+    return this.notificationRulesService.createRule(req.user.userId, body);
+  }
+
+  @Patch('rules/:id')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  updateRule(@Param('id') id: string, @Body() body: UpdateNotificationRuleDto) {
+    return this.notificationRulesService.updateRule(id, body);
+  }
+
+  @Post('rules/:id/test')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  testRule(@Param('id') id: string, @Body() body: TestNotificationRuleDto) {
+    return this.notificationRulesService.testRule(id, body);
   }
 }

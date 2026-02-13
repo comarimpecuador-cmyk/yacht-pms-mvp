@@ -11,6 +11,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { AlertsService } from '../alerts/alerts.service';
+import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../../prisma.service';
 import {
@@ -27,6 +28,7 @@ export class MaintenanceService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly alertsService: AlertsService,
+    private readonly notificationRulesService: NotificationRulesService,
   ) {}
 
   private assertYachtScope(yachtId: string, yachtIds: string[]) {
@@ -131,6 +133,30 @@ export class MaintenanceService {
         }),
       ),
     );
+
+    await this.notificationRulesService.dispatchCandidates([
+      {
+        type,
+        module: 'maintenance',
+        yachtId,
+        entityType: 'MaintenanceTask',
+        entityId: typeof payload.taskId === 'string' ? payload.taskId : undefined,
+        severity: this.resolveNotificationSeverity(type, payload),
+        payload: payload as Record<string, unknown>,
+        assigneeUserId: uniqueUsers[0] ?? null,
+        occurredAt: new Date(),
+      },
+    ]);
+  }
+
+  private resolveNotificationSeverity(
+    type: string,
+    payload: Prisma.JsonObject,
+  ): 'info' | 'warn' | 'critical' {
+    const priority = typeof payload.priority === 'string' ? payload.priority : '';
+    if (type.includes('overdue') || priority === 'Critical') return 'critical';
+    if (type.includes('due_soon') || type.includes('rejected')) return 'warn';
+    return 'info';
   }
 
   private getDueAlertSeverity(priority: MaintenanceTaskPriority, dueDate: Date): 'warn' | 'critical' {

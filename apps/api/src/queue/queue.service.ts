@@ -5,6 +5,7 @@ import IORedis from 'ioredis';
 
 @Injectable()
 export class QueueService implements OnModuleDestroy {
+  private readonly queueName = 'queue-dummy';
   private readonly connection: IORedis;
   private readonly queue: Queue;
   private readonly worker: Worker;
@@ -12,9 +13,9 @@ export class QueueService implements OnModuleDestroy {
   constructor(configService: ConfigService) {
     const redisUrl = configService.get<string>('REDIS_URL', 'redis://localhost:6379');
     this.connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
-    this.queue = new Queue('jobs', { connection: this.connection });
+    this.queue = new Queue(this.queueName, { connection: this.connection });
     this.worker = new Worker(
-      'jobs',
+      this.queueName,
       async (job: Job) => {
         return { ok: true, name: job.name, data: job.data };
       },

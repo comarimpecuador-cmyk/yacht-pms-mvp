@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DocumentStatus } from '@prisma/client';
 import { AlertsService } from '../../modules/alerts/alerts.service';
+import { NotificationRulesService, RuleEventCandidate } from '../../modules/notifications/notification-rules.service';
 import { NotificationsService } from '../../modules/notifications/notifications.service';
 import { PrismaService } from '../../prisma.service';
 
@@ -9,6 +10,7 @@ export class RuleEngineService {
   constructor(
     private readonly alertsService: AlertsService,
     private readonly notificationsService: NotificationsService,
+    private readonly notificationRulesService: NotificationRulesService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -55,6 +57,7 @@ export class RuleEngineService {
   }
 
   private async detectExpiringDocuments() {
+    const candidates: RuleEventCandidate[] = [];
     const checkpoints = [30, 14, 7, 3, 1];
     const now = new Date();
 
@@ -108,6 +111,22 @@ export class RuleEngineService {
           severity: 'critical',
           payload: { documentId: doc.id },
         });
+
+        candidates.push({
+          type: 'documents.expired',
+          module: 'documents',
+          yachtId: doc.yachtId,
+          entityType: 'Document',
+          entityId: doc.id,
+          severity: 'critical',
+          payload: {
+            documentId: doc.id,
+            daysLeft,
+            bucket: 'expired',
+          },
+          assigneeUserId: responsibleUserId,
+          occurredAt: now,
+        });
         continue;
       }
 
@@ -146,10 +165,31 @@ export class RuleEngineService {
           payload: { documentId: doc.id, bucket, daysLeft },
         });
       }
+
+      candidates.push({
+        type: 'documents.expiring',
+        module: 'documents',
+        yachtId: doc.yachtId,
+        entityType: 'Document',
+        entityId: doc.id,
+        severity,
+        payload: {
+          documentId: doc.id,
+          bucket,
+          daysLeft,
+        },
+        assigneeUserId: responsibleUserId,
+        occurredAt: now,
+      });
+    }
+
+    if (candidates.length > 0) {
+      await this.notificationRulesService.dispatchCandidates(candidates);
     }
   }
 
   private async detectMaintenanceDueOverdue() {
+    const candidates: RuleEventCandidate[] = [];
     const now = new Date();
     const dueSoon = new Date(now);
     dueSoon.setDate(dueSoon.getDate() + 3);
@@ -209,6 +249,28 @@ export class RuleEngineService {
           payload: { taskId: task.id, title: task.title, dueDate: task.dueDate.toISOString() },
         });
       }
+
+      candidates.push({
+        type: overdue ? 'maintenance.overdue' : 'maintenance.due_soon',
+        module: 'maintenance',
+        yachtId: task.yachtId,
+        entityType: 'MaintenanceTask',
+        entityId: task.id,
+        severity,
+        payload: {
+          taskId: task.id,
+          title: task.title,
+          dueDate: task.dueDate.toISOString(),
+          priority: task.priority,
+          overdue,
+        },
+        assigneeUserId: responsibleUserId,
+        occurredAt: now,
+      });
+    }
+
+    if (candidates.length > 0) {
+      await this.notificationRulesService.dispatchCandidates(candidates);
     }
   }
 

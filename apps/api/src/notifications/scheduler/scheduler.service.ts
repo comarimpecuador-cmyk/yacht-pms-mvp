@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Job, Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
+import { JobsService } from '../../modules/notifications/jobs.service';
 import { RuleEngineService } from './rule-engine.service';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class SchedulerService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly ruleEngineService: RuleEngineService,
+    private readonly jobsService: JobsService,
   ) {}
 
   async onModuleInit() {
@@ -26,6 +28,9 @@ export class SchedulerService implements OnModuleInit {
         if (job.name === 'hourly-rule-scan') {
           return this.ruleEngineService.runHourly();
         }
+        if (job.name === 'jobs-tick') {
+          return this.jobsService.tick();
+        }
         return { ignored: true };
       },
       { connection },
@@ -36,6 +41,15 @@ export class SchedulerService implements OnModuleInit {
       { pattern: '0 * * * *' },
       {
         name: 'hourly-rule-scan',
+        data: {},
+      },
+    );
+
+    await this.queue.upsertJobScheduler(
+      'jobs-tick',
+      { pattern: '*/5 * * * *' },
+      {
+        name: 'jobs-tick',
         data: {},
       },
     );
