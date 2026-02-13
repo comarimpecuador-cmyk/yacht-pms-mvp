@@ -119,6 +119,8 @@ export default function YachtMaintenancePage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
+  const [showTaskDetailModal, setShowTaskDetailModal] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -219,12 +221,91 @@ export default function YachtMaintenancePage() {
     try {
       await fn();
       await fetchData();
+      if (selectedTask?.id === taskId) {
+        setShowTaskDetailModal(false);
+        setSelectedTask(null);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : 'No se pudo ejecutar la accion');
     } finally {
       setActionLoadingId(null);
     }
   };
+
+  const openTaskDetail = (task: MaintenanceTask) => {
+    setSelectedTask(task);
+    setShowTaskDetailModal(true);
+  };
+
+  const closeTaskDetail = () => {
+    setShowTaskDetailModal(false);
+    setSelectedTask(null);
+  };
+
+  const renderTaskActions = (task: MaintenanceTask, compact = false) => (
+    <div className={`flex flex-wrap gap-2 ${compact ? 'pt-1' : ''}`}>
+      {canCreate && task.status !== 'Completed' && task.status !== 'Cancelled' && (
+        <button
+          type="button"
+          onClick={() => handleEdit(task)}
+          disabled={actionLoadingId === task.id}
+          className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
+        >
+          Editar
+        </button>
+      )}
+      {canCreate && (task.status === 'Draft' || task.status === 'Rejected') && (
+        <button
+          type="button"
+          onClick={() => handleSubmit(task)}
+          disabled={actionLoadingId === task.id}
+          className="rounded border border-blue-300 px-2 py-1 text-xs text-blue-700 hover:bg-blue-50"
+        >
+          Enviar
+        </button>
+      )}
+      {canReview && task.status === 'Submitted' && (
+        <>
+          <button
+            type="button"
+            onClick={() => handleApprove(task)}
+            disabled={actionLoadingId === task.id}
+            className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
+          >
+            Aprobar
+          </button>
+          <button
+            type="button"
+            onClick={() => handleReject(task)}
+            disabled={actionLoadingId === task.id}
+            className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+          >
+            Rechazar
+          </button>
+        </>
+      )}
+      {canComplete && (task.status === 'Approved' || task.status === 'InProgress') && (
+        <button
+          type="button"
+          onClick={() => handleComplete(task)}
+          disabled={actionLoadingId === task.id}
+          className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
+        >
+          Completar
+        </button>
+      )}
+      {canComplete && (
+        <button
+          type="button"
+          onClick={() => handleAddEvidence(task)}
+          disabled={actionLoadingId === task.id}
+          className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
+        >
+          Evidencia
+        </button>
+      )}
+    </div>
+  );
 
   const handleEdit = (task: MaintenanceTask) => {
     const nextTitle = window.prompt('Nuevo titulo de tarea', task.title);
@@ -352,7 +433,71 @@ export default function YachtMaintenancePage() {
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+      <div className="space-y-3 md:hidden">
+        {tasks.length === 0 ? (
+          <div className="rounded-xl border border-border bg-surface p-6 text-center">
+            <p className="text-sm font-medium text-text-primary">No hay tareas con este filtro</p>
+            <p className="mt-1 text-xs text-text-secondary">Ajusta el estado o crea una tarea nueva para comenzar.</p>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setShowCreateModal(true);
+                }}
+                className="mt-4 inline-flex items-center justify-center rounded-lg bg-info px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                Crear primera tarea
+              </button>
+            )}
+          </div>
+        ) : (
+          tasks.map((task) => (
+            <article key={task.id} className="rounded-xl border border-border bg-surface p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-text-primary">{task.title}</p>
+                  <p className="text-xs text-text-secondary">{task.systemTag || 'Sin sistema'}</p>
+                </div>
+                <StatusBadge status={task.status} />
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-lg border border-border bg-background px-2 py-1.5">
+                  <p className="text-text-secondary">Vence</p>
+                  <p className="mt-0.5 font-medium text-text-primary">
+                    {new Date(task.dueDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border bg-background px-2 py-1.5">
+                  <p className="text-text-secondary">Prioridad</p>
+                  <div className="mt-1"><PriorityBadge priority={task.priority} /></div>
+                </div>
+                <div className="rounded-lg border border-border bg-background px-2 py-1.5">
+                  <p className="text-text-secondary">Responsable</p>
+                  <p className="mt-0.5 truncate font-medium text-text-primary">
+                    {task.assignedToUserId ? crewNameById.get(task.assignedToUserId) || task.assignedToUserId : 'Sin asignar'}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border bg-background px-2 py-1.5">
+                  <p className="text-text-secondary">Evidencias</p>
+                  <p className="mt-0.5 font-medium text-text-primary">{task.evidences.length}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => openTaskDetail(task)}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-primary hover:bg-surface-hover"
+              >
+                Ver detalle y acciones
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface md:block">
         <table className="min-w-full text-sm">
           <thead className="bg-surface-hover text-xs uppercase tracking-wide text-text-secondary">
             <tr>
@@ -391,76 +536,80 @@ export default function YachtMaintenancePage() {
                     {task.assignedToUserId ? crewNameById.get(task.assignedToUserId) || task.assignedToUserId : 'Sin asignar'}
                   </td>
                   <td className="px-4 py-3 text-text-primary">{task.evidences.length}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
-                      {canCreate && task.status !== 'Completed' && task.status !== 'Cancelled' && (
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(task)}
-                          disabled={actionLoadingId === task.id}
-                          className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
-                        >
-                          Editar
-                        </button>
-                      )}
-                      {canCreate && (task.status === 'Draft' || task.status === 'Rejected') && (
-                        <button
-                          type="button"
-                          onClick={() => handleSubmit(task)}
-                          disabled={actionLoadingId === task.id}
-                          className="rounded border border-blue-300 px-2 py-1 text-xs text-blue-700 hover:bg-blue-50"
-                        >
-                          Enviar
-                        </button>
-                      )}
-                      {canReview && task.status === 'Submitted' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleApprove(task)}
-                            disabled={actionLoadingId === task.id}
-                            className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
-                          >
-                            Aprobar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleReject(task)}
-                            disabled={actionLoadingId === task.id}
-                            className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-                          >
-                            Rechazar
-                          </button>
-                        </>
-                      )}
-                      {canComplete && (task.status === 'Approved' || task.status === 'InProgress') && (
-                        <button
-                          type="button"
-                          onClick={() => handleComplete(task)}
-                          disabled={actionLoadingId === task.id}
-                          className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
-                        >
-                          Completar
-                        </button>
-                      )}
-                      {canComplete && (
-                        <button
-                          type="button"
-                          onClick={() => handleAddEvidence(task)}
-                          disabled={actionLoadingId === task.id}
-                          className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
-                        >
-                          Evidencia
-                        </button>
-                      )}
-                    </div>
-                  </td>
+                  <td className="px-4 py-3">{renderTaskActions(task)}</td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      {showTaskDetailModal && selectedTask && (
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm md:flex md:items-center md:justify-center md:p-4">
+          <div className="flex h-full w-full flex-col bg-surface md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-xl md:border md:border-border md:shadow-xl">
+            <div className="flex items-start justify-between border-b border-border px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-text-primary">{selectedTask.title}</p>
+                <p className="text-xs text-text-secondary">{selectedTask.systemTag || 'Sin sistema'}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeTaskDetail}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+                aria-label="Cerrar detalle"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-border bg-background p-2.5 text-xs">
+                  <p className="text-text-secondary">Vence</p>
+                  <p className="mt-0.5 font-medium text-text-primary">{new Date(selectedTask.dueDate).toLocaleDateString()}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-2.5 text-xs">
+                  <p className="text-text-secondary">Prioridad</p>
+                  <div className="mt-1"><PriorityBadge priority={selectedTask.priority} /></div>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-2.5 text-xs">
+                  <p className="text-text-secondary">Estado</p>
+                  <div className="mt-1"><StatusBadge status={selectedTask.status} /></div>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-2.5 text-xs">
+                  <p className="text-text-secondary">Responsable</p>
+                  <p className="mt-0.5 font-medium text-text-primary">
+                    {selectedTask.assignedToUserId
+                      ? crewNameById.get(selectedTask.assignedToUserId) || selectedTask.assignedToUserId
+                      : 'Sin asignar'}
+                  </p>
+                </div>
+              </div>
+
+              {selectedTask.description ? (
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Descripcion</p>
+                  <p className="mt-1 text-sm text-text-primary">{selectedTask.description}</p>
+                </div>
+              ) : null}
+
+              {selectedTask.rejectionReason ? (
+                <div className="rounded-lg border border-red-300/60 bg-red-50/70 p-3 text-sm text-red-700">
+                  <p className="font-medium">Motivo de rechazo</p>
+                  <p className="mt-1">{selectedTask.rejectionReason}</p>
+                </div>
+              ) : null}
+
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Acciones disponibles</p>
+                <div className="mt-2">{renderTaskActions(selectedTask, true)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

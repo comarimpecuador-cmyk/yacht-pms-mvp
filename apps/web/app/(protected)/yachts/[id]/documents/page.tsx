@@ -380,6 +380,9 @@ export default function YachtDocumentsPage() {
     try {
       await fn();
       await fetchData();
+      if (selectedDocument?.id === documentId && showDetailModal) {
+        await openDocumentDetail(documentId);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : 'No se pudo ejecutar la accion');
     } finally {
@@ -508,8 +511,123 @@ export default function YachtDocumentsPage() {
   const handleDelete = (doc: YachtDocument) => {
     const confirmed = window.confirm(`Eliminar documento "${doc.title || doc.docType}"? Esta accion no se puede deshacer.`);
     if (!confirmed) return;
-    void runAction(doc.id, () => api.delete(`/documents/${doc.id}`));
+    void runAction(doc.id, async () => {
+      await api.delete(`/documents/${doc.id}`);
+      if (selectedDocument?.id === doc.id) {
+        setShowDetailModal(false);
+        setSelectedDocument(null);
+      }
+    });
   };
+
+  const renderDocumentActions = (doc: YachtDocument, compact = false) => (
+    <div className={`flex flex-wrap gap-2 ${compact ? 'pt-1' : ''}`}>
+      <button
+        type="button"
+        onClick={() => void openDocumentDetail(doc.id)}
+        disabled={actionLoadingId === doc.id}
+        className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
+      >
+        Detalle
+      </button>
+      {canManage && doc.status !== 'Archived' && (
+        <>
+          <button
+            type="button"
+            onClick={() => handleEditExpiry(doc)}
+            disabled={actionLoadingId === doc.id}
+            className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
+          >
+            Editar
+          </button>
+          <button
+            type="button"
+            onClick={() => openVersionModal(doc.id)}
+            disabled={actionLoadingId === doc.id}
+            className="rounded border border-indigo-300 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-50"
+          >
+            Nueva version
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAddEvidence(doc)}
+            disabled={actionLoadingId === doc.id}
+            className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
+          >
+            Evidencia
+          </button>
+          {doc.status !== 'RenewalInProgress' && (
+            <button
+              type="button"
+              onClick={() => handleStartRenewal(doc)}
+              disabled={actionLoadingId === doc.id}
+              className="rounded border border-indigo-300 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-50"
+            >
+              Iniciar renovacion
+            </button>
+          )}
+          {doc.status === 'RenewalInProgress' && (
+            <button
+              type="button"
+              onClick={() => handleCompleteRenewal(doc)}
+              disabled={actionLoadingId === doc.id}
+              className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
+            >
+              Completar renovacion
+            </button>
+          )}
+          {doc.workflowStatus === 'draft' && (
+            <button
+              type="button"
+              onClick={() => openReviewModal(doc.id, 'submit')}
+              disabled={actionLoadingId === doc.id}
+              className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50"
+            >
+              Enviar
+            </button>
+          )}
+          {canApprove && doc.workflowStatus === 'submitted' && (
+            <>
+              <button
+                type="button"
+                onClick={() => openReviewModal(doc.id, 'approve')}
+                disabled={actionLoadingId === doc.id}
+                className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
+              >
+                Aprobar
+              </button>
+              <button
+                type="button"
+                onClick={() => openReviewModal(doc.id, 'reject')}
+                disabled={actionLoadingId === doc.id}
+                className="rounded border border-rose-300 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50"
+              >
+                Rechazar
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => handleArchive(doc)}
+            disabled={actionLoadingId === doc.id}
+            className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+          >
+            Archivar
+          </button>
+          {canDelete && doc.workflowStatus !== 'approved' && doc.workflowStatus !== 'submitted' && (
+            <button
+              type="button"
+              onClick={() => handleDelete(doc)}
+              disabled={actionLoadingId === doc.id}
+              className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+            >
+              Eliminar
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
 
   if (isLoading && documents.length === 0) {
     return (
@@ -609,7 +727,67 @@ export default function YachtDocumentsPage() {
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+      <div className="space-y-3 md:hidden">
+        {documents.length === 0 ? (
+          <div className="rounded-xl border border-border bg-surface p-6 text-center">
+            <p className="text-sm font-medium text-text-primary">No hay documentos con este filtro</p>
+            <p className="mt-1 text-xs text-text-secondary">Ajusta los filtros o crea el primer documento del yate.</p>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setShowCreateModal(true);
+                }}
+                className="mt-4 inline-flex items-center justify-center rounded-lg bg-info px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                Crear primer documento
+              </button>
+            )}
+          </div>
+        ) : (
+          documents.map((doc) => (
+            <article key={doc.id} className="rounded-xl border border-border bg-surface p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-text-primary">{doc.title || doc.docType}</p>
+                  <p className="text-xs text-text-secondary">{doc.docType}</p>
+                </div>
+                <span className="text-xs text-text-secondary">v{doc.currentVersion?.versionNo || 0}</span>
+              </div>
+
+              <div className="mt-2 flex flex-wrap gap-2">
+                <StatusBadge status={doc.status} />
+                <WorkflowBadge workflowStatus={doc.workflowStatus} />
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-lg border border-border bg-background px-2 py-1.5">
+                  <p className="text-text-secondary">Vence</p>
+                  <p className="mt-0.5 font-medium text-text-primary">
+                    {doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString() : '-'}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border bg-background px-2 py-1.5">
+                  <p className="text-text-secondary">Evidencias</p>
+                  <p className="mt-0.5 font-medium text-text-primary">{doc.evidences.length}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void openDocumentDetail(doc.id)}
+                disabled={actionLoadingId === doc.id}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-primary hover:bg-surface-hover"
+              >
+                Ver detalle y acciones
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface md:block">
         <table className="min-w-full text-sm">
           <thead className="bg-surface-hover text-xs uppercase tracking-wide text-text-secondary">
             <tr>
@@ -650,114 +828,7 @@ export default function YachtDocumentsPage() {
                   </td>
                   <td className="px-4 py-3 text-text-primary">v{doc.currentVersion?.versionNo || 0}</td>
                   <td className="px-4 py-3 text-text-primary">{doc.evidences.length}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void openDocumentDetail(doc.id)}
-                        disabled={actionLoadingId === doc.id}
-                        className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
-                      >
-                        Detalle
-                      </button>
-                      {canManage && doc.status !== 'Archived' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleEditExpiry(doc)}
-                            disabled={actionLoadingId === doc.id}
-                            className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openVersionModal(doc.id)}
-                            disabled={actionLoadingId === doc.id}
-                            className="rounded border border-indigo-300 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-50"
-                          >
-                            Nueva version
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddEvidence(doc)}
-                            disabled={actionLoadingId === doc.id}
-                            className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
-                          >
-                            Evidencia
-                          </button>
-                          {doc.status !== 'RenewalInProgress' && (
-                            <button
-                              type="button"
-                              onClick={() => handleStartRenewal(doc)}
-                              disabled={actionLoadingId === doc.id}
-                              className="rounded border border-indigo-300 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-50"
-                            >
-                              Iniciar renovacion
-                            </button>
-                          )}
-                          {doc.status === 'RenewalInProgress' && (
-                            <button
-                              type="button"
-                              onClick={() => handleCompleteRenewal(doc)}
-                              disabled={actionLoadingId === doc.id}
-                              className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
-                            >
-                              Completar renovacion
-                            </button>
-                          )}
-                          {doc.workflowStatus === 'draft' && (
-                            <button
-                              type="button"
-                              onClick={() => openReviewModal(doc.id, 'submit')}
-                              disabled={actionLoadingId === doc.id}
-                              className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50"
-                            >
-                              Enviar
-                            </button>
-                          )}
-                          {canApprove && doc.workflowStatus === 'submitted' && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => openReviewModal(doc.id, 'approve')}
-                                disabled={actionLoadingId === doc.id}
-                                className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
-                              >
-                                Aprobar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openReviewModal(doc.id, 'reject')}
-                                disabled={actionLoadingId === doc.id}
-                                className="rounded border border-rose-300 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50"
-                              >
-                                Rechazar
-                              </button>
-                            </>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleArchive(doc)}
-                            disabled={actionLoadingId === doc.id}
-                            className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-                          >
-                            Archivar
-                          </button>
-                          {canDelete && doc.workflowStatus !== 'approved' && doc.workflowStatus !== 'submitted' && (
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(doc)}
-                              disabled={actionLoadingId === doc.id}
-                              className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-                            >
-                              Eliminar
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </td>
+                  <td className="px-4 py-3">{renderDocumentActions(doc)}</td>
                 </tr>
               ))
             )}
@@ -1001,86 +1072,96 @@ export default function YachtDocumentsPage() {
       )}
 
       {showDetailModal && selectedDocument && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl">
-            <div className="mb-4 flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">{selectedDocument.title || selectedDocument.docType}</h2>
-                <p className="text-sm text-gray-600">{selectedDocument.docType}</p>
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm sm:flex sm:items-center sm:justify-center sm:p-4">
+          <div className="flex h-full w-full flex-col bg-surface sm:max-h-[90vh] sm:max-w-5xl sm:rounded-xl sm:border sm:border-border sm:shadow-xl">
+            <div className="flex items-start justify-between border-b border-border px-4 py-3">
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold text-text-primary">{selectedDocument.title || selectedDocument.docType}</h2>
+                <p className="text-sm text-text-secondary">{selectedDocument.docType}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowDetailModal(false)}
-                className="rounded-lg border px-3 py-2 text-sm text-gray-700"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+                aria-label="Cerrar detalle"
               >
-                Cerrar
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M6 18L18 6" />
+                </svg>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-gray-500">Estado operativo</p>
-                <div className="mt-1"><StatusBadge status={selectedDocument.status} /></div>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-gray-500">Flujo</p>
-                <div className="mt-1"><WorkflowBadge workflowStatus={selectedDocument.workflowStatus} /></div>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-gray-500">Confidencialidad</p>
-                <p className="mt-1 text-sm text-gray-900">
-                  {CONFIDENTIALITY_LABELS[selectedDocument.confidentiality || 'crew_only']}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-lg border p-3">
-                <h3 className="text-sm font-semibold text-gray-900">Versiones</h3>
-                <ul className="mt-2 space-y-2 text-sm">
-                  {(selectedDocument.versions || []).length === 0 ? (
-                    <li className="text-gray-500">Sin versiones</li>
-                  ) : (
-                    (selectedDocument.versions || []).map((version) => (
-                      <li key={version.id} className="rounded border p-2">
-                        <p className="font-medium text-gray-900">v{version.versionNo} - {version.fileName}</p>
-                        <p className="text-xs text-gray-600">{new Date(version.uploadedAt).toLocaleString()}</p>
-                        <div className="mt-1 flex gap-3">
-                          <a className="text-xs text-blue-700 hover:underline" href={version.fileUrl} target="_blank" rel="noreferrer">
-                            Ver
-                          </a>
-                          <a
-                            className="text-xs text-blue-700 hover:underline"
-                            href={version.fileUrl.includes('/api/uploads/files/')
-                              ? `${version.fileUrl}${version.fileUrl.includes('?') ? '&' : '?'}download=1`
-                              : version.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Descargar
-                          </a>
-                        </div>
-                      </li>
-                    ))
-                  )}
-                </ul>
+            <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <p className="text-xs text-text-secondary">Estado operativo</p>
+                  <div className="mt-1"><StatusBadge status={selectedDocument.status} /></div>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <p className="text-xs text-text-secondary">Flujo</p>
+                  <div className="mt-1"><WorkflowBadge workflowStatus={selectedDocument.workflowStatus} /></div>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <p className="text-xs text-text-secondary">Confidencialidad</p>
+                  <p className="mt-1 text-sm text-text-primary">
+                    {CONFIDENTIALITY_LABELS[selectedDocument.confidentiality || 'crew_only']}
+                  </p>
+                </div>
               </div>
 
-              <div className="rounded-lg border p-3">
-                <h3 className="text-sm font-semibold text-gray-900">Auditoria</h3>
-                <ul className="mt-2 space-y-2 text-sm">
-                  {(selectedDocument.auditTrail || []).length === 0 ? (
-                    <li className="text-gray-500">Sin registros de auditoria</li>
-                  ) : (
-                    (selectedDocument.auditTrail || []).map((audit) => (
-                      <li key={audit.id} className="rounded border p-2">
-                        <p className="font-medium text-gray-900">{audit.action}</p>
-                        <p className="text-xs text-gray-700">{AUDIT_ACTION_LABELS[audit.action] || audit.action}</p>
-                        <p className="text-xs text-gray-600">{audit.actorName} - {new Date(audit.timestamp).toLocaleString()}</p>
-                      </li>
-                    ))
-                  )}
-                </ul>
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Acciones disponibles</p>
+                <div className="mt-2">{renderDocumentActions(selectedDocument, true)}</div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <h3 className="text-sm font-semibold text-text-primary">Versiones</h3>
+                  <ul className="mt-2 space-y-2 text-sm">
+                    {(selectedDocument.versions || []).length === 0 ? (
+                      <li className="text-text-secondary">Sin versiones</li>
+                    ) : (
+                      (selectedDocument.versions || []).map((version) => (
+                        <li key={version.id} className="rounded border border-border bg-surface p-2">
+                          <p className="font-medium text-text-primary">v{version.versionNo} - {version.fileName}</p>
+                          <p className="text-xs text-text-secondary">{new Date(version.uploadedAt).toLocaleString()}</p>
+                          <div className="mt-1 flex gap-3">
+                            <a className="text-xs text-info hover:underline" href={version.fileUrl} target="_blank" rel="noreferrer">
+                              Ver
+                            </a>
+                            <a
+                              className="text-xs text-info hover:underline"
+                              href={version.fileUrl.includes('/api/uploads/files/')
+                                ? `${version.fileUrl}${version.fileUrl.includes('?') ? '&' : '?'}download=1`
+                                : version.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Descargar
+                            </a>
+                          </div>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
+
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <h3 className="text-sm font-semibold text-text-primary">Auditoria</h3>
+                  <ul className="mt-2 space-y-2 text-sm">
+                    {(selectedDocument.auditTrail || []).length === 0 ? (
+                      <li className="text-text-secondary">Sin registros de auditoria</li>
+                    ) : (
+                      (selectedDocument.auditTrail || []).map((audit) => (
+                        <li key={audit.id} className="rounded border border-border bg-surface p-2">
+                          <p className="font-medium text-text-primary">{audit.action}</p>
+                          <p className="text-xs text-text-secondary">{AUDIT_ACTION_LABELS[audit.action] || audit.action}</p>
+                          <p className="text-xs text-text-secondary">{audit.actorName} - {new Date(audit.timestamp).toLocaleString()}</p>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
