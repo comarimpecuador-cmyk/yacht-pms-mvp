@@ -342,22 +342,22 @@ export default function YachtInventoryPage() {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Items</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{total}</p>
+      <section className="kpi-grid">
+        <div className="kpi-card">
+          <p className="kpi-label">Items</p>
+          <p className="kpi-value">{total}</p>
         </div>
-        <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 p-4">
-          <p className="text-xs text-text-secondary">Stock bajo</p>
-          <p className="mt-1 text-2xl font-semibold text-amber-300">{summary.low}</p>
+        <div className="kpi-card kpi-card-warning">
+          <p className="kpi-label">Stock bajo</p>
+          <p className="kpi-value text-amber-300">{summary.low}</p>
         </div>
-        <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-4">
-          <p className="text-xs text-text-secondary">Sin stock</p>
-          <p className="mt-1 text-2xl font-semibold text-red-300">{summary.out}</p>
+        <div className="kpi-card kpi-card-danger">
+          <p className="kpi-label">Sin stock</p>
+          <p className="kpi-value text-red-300">{summary.out}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Movimientos</p>
-          <p className="mt-1 text-sm text-text-primary">Registrar entradas, salidas y ajustes.</p>
+        <div className="kpi-card">
+          <p className="kpi-label">Movimientos</p>
+          <p className="kpi-detail">Registrar entradas, salidas y ajustes.</p>
         </div>
       </section>
 

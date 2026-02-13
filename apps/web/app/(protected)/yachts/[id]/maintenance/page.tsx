@@ -310,24 +310,24 @@ export default function YachtMaintenancePage() {
 
       {error && <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Pendientes</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">
+      <div className="kpi-grid">
+        <div className="kpi-card kpi-card-accent">
+          <p className="kpi-label">Pendientes</p>
+          <p className="kpi-value text-accent">
             {(summary?.draft || 0) + (summary?.submitted || 0) + (summary?.approved || 0) + (summary?.inProgress || 0)}
           </p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Vencidas</p>
-          <p className="mt-1 text-2xl font-semibold text-red-600">{summary?.overdue || 0}</p>
+        <div className="kpi-card kpi-card-danger">
+          <p className="kpi-label">Vencidas</p>
+          <p className="kpi-value text-red-300">{summary?.overdue || 0}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Completadas</p>
-          <p className="mt-1 text-2xl font-semibold text-emerald-600">{summary?.completed || 0}</p>
+        <div className="kpi-card">
+          <p className="kpi-label">Completadas</p>
+          <p className="kpi-value text-emerald-500">{summary?.completed || 0}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Total</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{summary?.total || 0}</p>
+        <div className="kpi-card">
+          <p className="kpi-label">Total</p>
+          <p className="kpi-value">{summary?.total || 0}</p>
         </div>
       </div>
 

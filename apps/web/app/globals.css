@@ -60,6 +60,38 @@
     @apply bg-surface border border-border rounded-xl p-6;
   }
 
+  .kpi-grid {
+    @apply grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))];
+  }
+
+  .kpi-card {
+    @apply rounded-xl border border-border bg-surface px-3 py-3 sm:px-4;
+  }
+
+  .kpi-card-accent {
+    @apply border-accent/50 bg-accent/10;
+  }
+
+  .kpi-card-warning {
+    @apply border-warning/50 bg-warning/10;
+  }
+
+  .kpi-card-danger {
+    @apply border-red-500/40 bg-red-500/10;
+  }
+
+  .kpi-label {
+    @apply text-[11px] font-medium uppercase tracking-wide text-text-secondary;
+  }
+
+  .kpi-value {
+    @apply mt-1 text-xl font-semibold text-text-primary;
+  }
+
+  .kpi-detail {
+    @apply mt-1 text-[11px] text-text-muted;
+  }
+
   .menu-section-title {
     @apply mt-3 mb-2 flex items-center gap-2 rounded-md bg-surface-hover/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted;
   }

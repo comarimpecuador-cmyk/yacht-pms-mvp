@@ -215,87 +215,89 @@ export default function TimelinePage() {
   }, [rows]);
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{translate('timeline.title')}</h1>
+        <h1 className="text-2xl font-semibold text-text-primary">{translate('timeline.title')}</h1>
         <button
           type="button"
           onClick={() => fetchTimeline()}
-          className="rounded border bg-white px-3 py-2 text-sm hover:bg-slate-50"
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"
         >
           Actualizar
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 rounded border bg-white p-4 md:grid-cols-4">
-        <div>
-          <label className="mb-1 block text-xs text-slate-500">Yate</label>
-          <select
-            value={selectedYachtId}
-            onChange={(event) => setSelectedYachtId(event.target.value)}
-            className="w-full rounded border px-2 py-2 text-sm"
-          >
-            {isSystemAdmin && <option value="all">Todos los yates</option>}
-            {yachts.map((yacht) => (
-              <option key={yacht.id} value={yacht.id}>
-                {yacht.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs text-slate-500">Ventana</label>
-          <select
-            value={windowDays}
-            onChange={(event) => setWindowDays(Number(event.target.value))}
-            className="w-full rounded border px-2 py-2 text-sm"
-          >
-            {WINDOW_OPTIONS.map((days) => (
-              <option key={days} value={days}>
-                {days} dias
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs text-slate-500">Severidad</label>
-          <select
-            value={severityFilter}
-            onChange={(event) => setSeverityFilter(event.target.value as 'all' | Severity)}
-            className="w-full rounded border px-2 py-2 text-sm"
-          >
-            <option value="all">Todas</option>
-            <option value="critical">Critica</option>
-            <option value="warn">Advertencia</option>
-            <option value="info">Informativa</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded bg-slate-100 p-2">
-            <p className="text-xs text-slate-500">Total</p>
-            <p className="text-lg font-semibold">{counters.total}</p>
+      <div className="space-y-3 rounded-xl border border-border bg-surface p-4">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-xs text-text-secondary">Yate</label>
+            <select
+              value={selectedYachtId}
+              onChange={(event) => setSelectedYachtId(event.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary"
+            >
+              {isSystemAdmin && <option value="all">Todos los yates</option>}
+              {yachts.map((yacht) => (
+                <option key={yacht.id} value={yacht.id}>
+                  {yacht.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="rounded bg-red-50 p-2">
-            <p className="text-xs text-red-500">Critica</p>
-            <p className="text-lg font-semibold text-red-700">{counters.critical}</p>
+
+          <div>
+            <label className="mb-1 block text-xs text-text-secondary">Ventana</label>
+            <select
+              value={windowDays}
+              onChange={(event) => setWindowDays(Number(event.target.value))}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary"
+            >
+              {WINDOW_OPTIONS.map((days) => (
+                <option key={days} value={days}>
+                  {days} dias
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="rounded bg-amber-50 p-2">
-            <p className="text-xs text-amber-600">Advertencia</p>
-            <p className="text-lg font-semibold text-amber-700">{counters.warn}</p>
+
+          <div>
+            <label className="mb-1 block text-xs text-text-secondary">Severidad</label>
+            <select
+              value={severityFilter}
+              onChange={(event) => setSeverityFilter(event.target.value as 'all' | Severity)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary"
+            >
+              <option value="all">Todas</option>
+              <option value="critical">Critica</option>
+              <option value="warn">Advertencia</option>
+              <option value="info">Informativa</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="kpi-grid">
+          <div className="kpi-card">
+            <p className="kpi-label">Total</p>
+            <p className="kpi-value">{counters.total}</p>
+          </div>
+          <div className="kpi-card kpi-card-danger">
+            <p className="kpi-label">Critica</p>
+            <p className="kpi-value text-red-300">{counters.critical}</p>
+          </div>
+          <div className="kpi-card kpi-card-warning">
+            <p className="kpi-label">Advertencia</p>
+            <p className="kpi-value text-amber-300">{counters.warn}</p>
           </div>
         </div>
       </div>
 
-      {loading && <p className="text-sm text-slate-500">Cargando agenda...</p>}
+      {loading && <p className="text-sm text-text-secondary">Cargando agenda...</p>}
       {!loading && error && (
-        <p className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</p>
+        <p className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>
       )}
 
       {!loading && !error && visibleRows.length === 0 && (
-        <p className="rounded border bg-white p-4 text-sm text-slate-500">
+        <p className="rounded-xl border border-border bg-surface p-4 text-sm text-text-secondary">
           No hay eventos para esta fecha/rango.
         </p>
       )}
@@ -303,20 +305,20 @@ export default function TimelinePage() {
       {!loading && !error && visibleRows.length > 0 && (
         <ul className="space-y-2">
           {visibleRows.map((row) => (
-            <li key={row.id} className="rounded border bg-white p-4 text-sm">
+            <li key={row.id} className="rounded-xl border border-border bg-surface p-4 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className={`inline-flex rounded px-2 py-1 text-xs font-medium ${severityClass(row.severity)}`}>
                     {severityLabel(row.severity)}
                   </span>
-                  <strong>{moduleLabel(row.module)}</strong>
-                  <span className="text-slate-500">{row.title}</span>
-                  {row.status && <span className="text-xs text-slate-400">({row.status})</span>}
+                  <strong className="text-text-primary">{moduleLabel(row.module)}</strong>
+                  <span className="text-text-secondary">{row.title}</span>
+                  {row.status && <span className="text-xs text-text-muted">({row.status})</span>}
                 </div>
-                <span className="text-xs text-slate-500">{new Date(row.when).toLocaleString('es-EC')}</span>
+                <span className="text-xs text-text-secondary">{new Date(row.when).toLocaleString('es-EC')}</span>
               </div>
-              <p className="mt-1 text-xs text-slate-500">{row.yachtName} - Agenda</p>
-              {row.description && <p className="mt-1 text-xs text-slate-600">{row.description}</p>}
+              <p className="mt-1 text-xs text-text-secondary">{row.yachtName} - Agenda</p>
+              {row.description && <p className="mt-1 text-xs text-text-secondary">{row.description}</p>}
               {row.link && (
                 <a href={row.link} className="mt-2 inline-block text-xs text-info hover:underline">
                   Ver detalle

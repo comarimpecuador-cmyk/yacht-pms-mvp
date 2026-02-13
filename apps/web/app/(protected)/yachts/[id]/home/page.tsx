@@ -42,12 +42,14 @@ function StatCard({
   detail,
   href,
   alert,
+  priority,
 }: {
   title: string;
   value: string;
   detail?: string;
   href?: string;
   alert?: boolean;
+  priority?: boolean;
 }) {
   const router = useRouter();
   const clickable = Boolean(href);
@@ -56,13 +58,19 @@ function StatCard({
     <button
       type="button"
       onClick={() => href && router.push(href)}
-      className={`w-full rounded-xl border p-5 text-left transition ${
+      className={`kpi-card w-full text-left transition ${
         clickable ? 'hover:shadow-md' : ''
-      } ${alert ? 'border-warning/60' : 'border-border'} bg-surface`}
+      } ${
+        priority
+          ? 'kpi-card-accent'
+          : alert
+            ? 'kpi-card-warning'
+            : ''
+      }`}
     >
-      <p className="text-sm text-text-secondary">{title}</p>
-      <p className="mt-2 text-3xl font-semibold text-text-primary">{value}</p>
-      {detail && <p className="mt-2 text-xs text-text-muted">{detail}</p>}
+      <p className={`kpi-label ${priority ? 'text-accent' : ''}`}>{title}</p>
+      <p className={`kpi-value ${priority ? 'text-accent' : ''}`}>{value}</p>
+      {detail && <p className="kpi-detail">{detail}</p>}
     </button>
   );
 }
@@ -161,9 +169,9 @@ export default function YachtHomePage() {
     return (
       <div className="space-y-4">
         <div className="h-8 w-64 animate-pulse rounded bg-surface-hover" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl bg-surface-hover" />
+        <div className="kpi-grid">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-24 animate-pulse rounded-xl bg-surface-hover" />
           ))}
         </div>
       </div>
@@ -195,29 +203,20 @@ export default function YachtHomePage() {
         </div>
       )}
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <StatCard
-          title="Borradores de bitacora"
-          value={String(summary?.stats.logbookPending ?? 0)}
-          detail={`Pendientes de revision: ${summary?.stats.logbookPendingReview ?? 0}`}
-          href={`/yachts/${yachtId}/logbook?view=drafts`}
-        />
+      <section className="kpi-grid">
         <StatCard
           title="Alertas activas"
           value={String(summary?.stats.alerts ?? 0)}
           href={`/timeline?yachtId=${encodeURIComponent(yachtId)}`}
           alert={(summary?.stats.alerts ?? 0) > 0}
+          priority
         />
         <StatCard
           title="Mantenimientos pendientes"
           value={maintenanceValue}
           detail={summary?.stats.maintenanceReady ? undefined : 'Modulo de mantenimiento aun no implementado'}
           href={`/yachts/${yachtId}/maintenance`}
-        />
-        <StatCard
-          title="Tripulantes con acceso"
-          value={String(summary?.stats.crewOnboard ?? 0)}
-          href={`/yachts/${yachtId}/crew`}
+          priority
         />
         <StatCard
           title="Documentos pendientes"
@@ -225,6 +224,18 @@ export default function YachtHomePage() {
           detail={`Por vencer (7 dias): ${summary?.stats.documentsExpiringSoon ?? 0}`}
           href={`/yachts/${yachtId}/documents`}
           alert={(summary?.stats.documentsPendingApproval ?? 0) > 0 || (summary?.stats.documentsExpiringSoon ?? 0) > 0}
+          priority
+        />
+        <StatCard
+          title="Borradores de bitacora"
+          value={String(summary?.stats.logbookPending ?? 0)}
+          detail={`Pendientes de revision: ${summary?.stats.logbookPendingReview ?? 0}`}
+          href={`/yachts/${yachtId}/logbook?view=drafts`}
+        />
+        <StatCard
+          title="Tripulantes con acceso"
+          value={String(summary?.stats.crewOnboard ?? 0)}
+          href={`/yachts/${yachtId}/crew`}
         />
         <StatCard
           title="Inventario en bajo stock"

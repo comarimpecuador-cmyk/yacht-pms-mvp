@@ -546,30 +546,30 @@ export default function YachtDocumentsPage() {
 
       {error && <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Total</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{documentsTotal || summary?.total || 0}</p>
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <p className="kpi-label">Total</p>
+          <p className="kpi-value">{documentsTotal || summary?.total || 0}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Por vencer</p>
-          <p className="mt-1 text-2xl font-semibold text-amber-600">{summary?.expiringSoon || 0}</p>
+        <div className="kpi-card kpi-card-warning">
+          <p className="kpi-label">Por vencer</p>
+          <p className="kpi-value text-amber-300">{summary?.expiringSoon || 0}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Vencidos</p>
-          <p className="mt-1 text-2xl font-semibold text-red-600">{summary?.expired || 0}</p>
+        <div className="kpi-card kpi-card-danger">
+          <p className="kpi-label">Vencidos</p>
+          <p className="kpi-value text-red-300">{summary?.expired || 0}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Renovacion en curso</p>
-          <p className="mt-1 text-2xl font-semibold text-indigo-600">{summary?.renewalInProgress || 0}</p>
+        <div className="kpi-card">
+          <p className="kpi-label">Renovacion en curso</p>
+          <p className="kpi-value text-indigo-400">{summary?.renewalInProgress || 0}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Pendientes aprobacion</p>
-          <p className="mt-1 text-2xl font-semibold text-amber-600">{summary?.pendingApproval || 0}</p>
+        <div className="kpi-card kpi-card-warning">
+          <p className="kpi-label">Pendientes aprobacion</p>
+          <p className="kpi-value text-amber-300">{summary?.pendingApproval || 0}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Borradores</p>
-          <p className="mt-1 text-2xl font-semibold text-blue-600">{summary?.drafts || 0}</p>
+        <div className="kpi-card">
+          <p className="kpi-label">Borradores</p>
+          <p className="kpi-value text-blue-400">{summary?.drafts || 0}</p>
         </div>
       </div>
 

@@ -25,7 +25,7 @@ function YachtCard({
     : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
 
   return (
-    <article className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-accent/40 hover:shadow-md">
+    <article className="rounded-2xl border border-border bg-surface p-4 shadow-sm transition hover:border-accent/40 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-lg font-semibold text-text-primary">{yacht.name}</h3>
@@ -39,7 +39,7 @@ function YachtCard({
         </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
         <button
           type="button"
           onClick={() => onSelect(yacht.id)}
@@ -174,22 +174,24 @@ export default function YachtsPage() {
           )}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-            <span className="text-xs text-text-secondary">Total</span>
-            <span className="text-sm font-semibold text-text-primary">{yachts.length}</span>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-            <span className="text-xs text-text-secondary">Activos</span>
-            <span className="text-sm font-semibold text-text-primary">{activeCount}</span>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-            <span className="text-xs text-text-secondary">Inactivos</span>
-            <span className="text-sm font-semibold text-text-primary">{inactiveCount}</span>
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="kpi-grid">
+            <div className="kpi-card">
+              <p className="kpi-label">Total</p>
+              <p className="kpi-value">{yachts.length}</p>
+            </div>
+            <div className="kpi-card kpi-card-accent">
+              <p className="kpi-label">Activos</p>
+              <p className="kpi-value text-accent">{activeCount}</p>
+            </div>
+            <div className="kpi-card kpi-card-warning">
+              <p className="kpi-label">Inactivos</p>
+              <p className="kpi-value">{inactiveCount}</p>
+            </div>
           </div>
 
           {isSystemAdmin && (
-            <div className="inline-flex items-center rounded-lg border border-border bg-background p-1 sm:ml-auto">
+            <div className="inline-flex items-center rounded-lg border border-border bg-background p-1 lg:justify-self-end">
               <button
                 type="button"
                 onClick={() => setFilter('all')}
@@ -233,7 +235,7 @@ export default function YachtsPage() {
           No hay yates para el filtro seleccionado.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
           {yachtsVisible.map((yacht) => (
             <YachtCard
               key={yacht.id}

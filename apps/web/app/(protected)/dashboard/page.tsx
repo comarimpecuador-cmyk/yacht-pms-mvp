@@ -104,26 +104,26 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Usuario</p>
-          <p className="mt-1 text-sm font-medium text-text-primary">{user?.email || '-'}</p>
-          <p className="text-xs text-text-muted">Rol: {user?.role || '-'}</p>
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <p className="kpi-label">Usuario</p>
+          <p className="mt-1 truncate text-sm font-medium text-text-primary">{user?.email || '-'}</p>
+          <p className="kpi-detail">Rol: {user?.role || '-'}</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Yates visibles</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{yachts.length}</p>
+        <div className="kpi-card">
+          <p className="kpi-label">Yates visibles</p>
+          <p className="kpi-value">{yachts.length}</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Yates activos</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{activeYachts}</p>
+        <div className="kpi-card kpi-card-accent">
+          <p className="kpi-label">Yates activos</p>
+          <p className="kpi-value text-accent">{activeYachts}</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Yates inactivos</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{inactiveYachts}</p>
+        <div className="kpi-card kpi-card-warning">
+          <p className="kpi-label">Yates inactivos</p>
+          <p className="kpi-value">{inactiveYachts}</p>
         </div>
       </div>
 
@@ -157,13 +157,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Link href="/yachts" className="rounded-xl border border-border bg-surface p-5 hover:shadow-md">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <Link href="/yachts" className="rounded-xl border border-border bg-surface p-4 hover:shadow-md">
           <p className="text-sm font-medium text-text-primary">Gestion de yates</p>
           <p className="mt-1 text-xs text-text-secondary">Seleccion, alta y edicion de datos del yate.</p>
         </Link>
         {user?.role === 'SystemAdmin' && (
-          <Link href="/settings/users" className="rounded-xl border border-border bg-surface p-5 hover:shadow-md">
+          <Link href="/settings/users" className="rounded-xl border border-border bg-surface p-4 hover:shadow-md">
             <p className="text-sm font-medium text-text-primary">Usuarios y permisos</p>
             <p className="mt-1 text-xs text-text-secondary">Asigna usuarios a yates y controla estado de acceso.</p>
           </Link>

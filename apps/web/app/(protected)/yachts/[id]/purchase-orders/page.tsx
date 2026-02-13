@@ -281,7 +281,7 @@ export default function YachtPurchaseOrdersPage() {
       </header>
 
       <section className="rounded-xl border border-border bg-surface p-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto_auto] lg:items-center">
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as 'all' | PurchaseOrderStatus)}
@@ -294,11 +294,14 @@ export default function YachtPurchaseOrdersPage() {
               </option>
             ))}
           </select>
-          <div className="flex items-center text-sm text-text-secondary">Total: {total}</div>
+          <div className="kpi-card w-full lg:w-auto">
+            <p className="kpi-label">Total PO</p>
+            <p className="kpi-value">{total}</p>
+          </div>
           <button
             type="button"
             onClick={() => loadOrders()}
-            className="rounded-lg border border-border px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"
+            className="rounded-lg border border-border px-3 py-2 text-sm text-text-primary hover:bg-surface-hover lg:w-auto"
           >
             Actualizar
           </button>

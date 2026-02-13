@@ -332,22 +332,22 @@ export default function YachtHrmPage() {
 
       {error && <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Horarios</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{schedules.length}</p>
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <p className="kpi-label">Horarios</p>
+          <p className="kpi-value">{schedules.length}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Descansos declarados</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{restReport?.summary.total || 0}</p>
+        <div className="kpi-card">
+          <p className="kpi-label">Descansos declarados</p>
+          <p className="kpi-value">{restReport?.summary.total || 0}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Solicitudes de permiso</p>
-          <p className="mt-1 text-2xl font-semibold text-text-primary">{leaves.length}</p>
+        <div className="kpi-card">
+          <p className="kpi-label">Solicitudes de permiso</p>
+          <p className="kpi-value">{leaves.length}</p>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-text-secondary">Cumplimiento descanso</p>
-          <p className="mt-1 text-2xl font-semibold text-emerald-600">{restReport?.summary.complianceRate ?? 100}%</p>
+        <div className="kpi-card kpi-card-accent">
+          <p className="kpi-label">Cumplimiento descanso</p>
+          <p className="kpi-value text-emerald-500">{restReport?.summary.complianceRate ?? 100}%</p>
         </div>
       </div>
 
