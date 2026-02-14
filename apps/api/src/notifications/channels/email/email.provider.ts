@@ -37,10 +37,10 @@ export class EmailProvider implements NotificationChannelProvider {
     return this.sendViaBrevo({
       toEmail: recipient.email,
       toName: recipient.fullName,
-      subject: this.pickText(input.payload, ['title']) ?? `Yacht PMS - ${input.type}`,
+      subject: this.pickText(input.payload, ['title']) ?? `Yacht PMS - Notificacion ${input.type}`,
       htmlContent:
         this.pickText(input.payload, ['htmlContent']) ??
-        this.buildDefaultHtml(input.payload, 'You have an operational notification in Yacht PMS.'),
+        this.buildDefaultHtml(input.payload, 'Tiene una notificacion operativa en Yacht PMS.'),
     });
   }
 
@@ -53,10 +53,10 @@ export class EmailProvider implements NotificationChannelProvider {
     return this.sendViaBrevo({
       toEmail: input.toEmail,
       toName: input.toName,
-      subject: this.pickText(input.payload, ['title']) ?? `Yacht PMS - ${input.type}`,
+      subject: this.pickText(input.payload, ['title']) ?? `Yacht PMS - Notificacion ${input.type}`,
       htmlContent:
         this.pickText(input.payload, ['htmlContent']) ??
-        this.buildDefaultHtml(input.payload, 'You have an operational notification in Yacht PMS.'),
+        this.buildDefaultHtml(input.payload, 'Tiene una notificacion operativa en Yacht PMS.'),
     });
   }
 

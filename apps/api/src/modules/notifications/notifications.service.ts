@@ -305,7 +305,7 @@ export class NotificationsService {
   }) {
     const recipients = this.normalizeScenarioRecipients(input.toEmail, input.toName, input.recipients);
     if (recipients.length === 0) {
-      throw new BadRequestException('At least one recipient email is required');
+      throw new BadRequestException('Se requiere al menos un destinatario de correo');
     }
 
     const yacht = input.yachtId
@@ -319,7 +319,7 @@ export class NotificationsService {
           orderBy: { createdAt: 'asc' },
         });
 
-    const yachtName = yacht?.name ?? 'Yacht not defined';
+    const yachtName = yacht?.name ?? 'Yate no definido';
     const yachtId = yacht?.id;
     const baseUrl = process.env.API_PUBLIC_BASE_URL?.trim() || 'https://yacht.reinotierra.com';
     const scenarios =
@@ -372,7 +372,7 @@ export class NotificationsService {
           ...withResponsible,
           dueText: dueInfo.dueText,
           highlights: dueInfo.remainingLabel
-            ? [{ label: 'Time remaining', value: dueInfo.remainingLabel }, ...withResponsible.highlights]
+            ? [{ label: 'Tiempo restante', value: dueInfo.remainingLabel }, ...withResponsible.highlights]
             : withResponsible.highlights,
         };
 
@@ -1253,89 +1253,89 @@ export class NotificationsService {
 
     if (scenario === 'inventory_low_stock') {
       return {
-        moduleLabel: 'Inventory',
+        moduleLabel: 'Inventario',
         type: 'inventory.low_stock',
         severity: 'warn',
-        title: `Low stock detected in ${yachtName}`,
-        message: 'Spare part "Main oil filter" dropped to 2 units and is below minimum stock.',
-        actionLabel: 'Review inventory',
+        title: `Stock bajo detectado en ${yachtName}`,
+        message: 'El repuesto "Filtro de aceite principal" bajo a 2 unidades y quedo bajo el minimo permitido.',
+        actionLabel: 'Revisar inventario',
         actionUrl: `${safeBaseUrl}${sectionPath('inventory')}`,
-        dueText: 'Handle this today to avoid stockout.',
+        dueText: 'Atender hoy para evitar quiebre de stock.',
         highlights: [
-          { label: 'Part', value: 'Main oil filter' },
-          { label: 'Current stock', value: '2 units' },
-          { label: 'Minimum stock', value: '5 units' },
+          { label: 'Repuesto', value: 'Filtro de aceite principal' },
+          { label: 'Stock actual', value: '2 unidades' },
+          { label: 'Stock minimo', value: '5 unidades' },
         ],
       };
     }
 
     if (scenario === 'maintenance_due_this_week') {
       return {
-        moduleLabel: 'Maintenance',
+        moduleLabel: 'Mantenimiento',
         type: 'maintenance.due_soon',
         severity: 'warn',
-        title: `Scheduled maintenance this week - ${yachtName}`,
-        message: 'Task "Main engine cooling system review" is due this week.',
-        actionLabel: 'View maintenance',
+        title: `Mantenimiento programado esta semana - ${yachtName}`,
+        message: 'La tarea "Revision del sistema de enfriamiento del motor principal" vence esta semana.',
+        actionLabel: 'Ver mantenimiento',
         actionUrl: `${safeBaseUrl}${sectionPath('maintenance')}`,
-        dueText: 'Due in 3 days.',
+        dueText: 'Vence en 3 dias.',
         highlights: [
-          { label: 'Task', value: 'Main engine cooling system review' },
-          { label: 'Priority', value: 'High' },
-          { label: 'Due', value: 'This week' },
+          { label: 'Tarea', value: 'Revision del sistema de enfriamiento del motor principal' },
+          { label: 'Prioridad', value: 'Alta' },
+          { label: 'Vencimiento', value: 'Esta semana' },
         ],
       };
     }
 
     if (scenario === 'documents_renewal_due') {
       return {
-        moduleLabel: 'Documents',
+        moduleLabel: 'Documentos',
         type: 'documents.expiring',
         severity: 'critical',
-        title: `Document renewal approaching - ${yachtName}`,
-        message: 'Navigation certificate expires soon and renewal must be started.',
-        actionLabel: 'Open documents',
+        title: `Renovacion documental cercana - ${yachtName}`,
+        message: 'El certificado de navegacion vence pronto y requiere iniciar la renovacion.',
+        actionLabel: 'Ir a documentos',
         actionUrl: `${safeBaseUrl}${sectionPath('documents')}`,
-        dueText: 'Due in 7 days.',
+        dueText: 'Vence en 7 dias.',
         highlights: [
-          { label: 'Document', value: 'Navigation certificate' },
-          { label: 'Status', value: 'Expiring soon' },
-          { label: 'Action', value: 'Start renewal' },
+          { label: 'Documento', value: 'Certificado de navegacion' },
+          { label: 'Estado', value: 'Por vencer' },
+          { label: 'Accion', value: 'Iniciar renovacion' },
         ],
       };
     }
 
     if (scenario === 'purchase_order_pending') {
       return {
-        moduleLabel: 'Purchase orders',
+        moduleLabel: 'Ordenes de compra',
         type: 'po.submitted',
         severity: 'info',
-        title: `Purchase order pending approval - ${yachtName}`,
-        message: 'Order PO-2026-0042 was submitted and is pending approval.',
-        actionLabel: 'Review purchase orders',
+        title: `Orden de compra pendiente de aprobacion - ${yachtName}`,
+        message: 'La orden PO-2026-0042 fue enviada y esta pendiente de aprobacion.',
+        actionLabel: 'Revisar ordenes',
         actionUrl: `${safeBaseUrl}${sectionPath('purchase-orders')}`,
-        dueText: 'Pending approval since today.',
+        dueText: 'Pendiente de aprobacion desde hoy.',
         highlights: [
           { label: 'PO', value: 'PO-2026-0042' },
-          { label: 'Vendor', value: 'Marine Parts Supply' },
-          { label: 'Amount', value: 'USD 3,240' },
+          { label: 'Proveedor', value: 'Marine Parts Supply' },
+          { label: 'Monto', value: 'USD 3,240' },
         ],
       };
     }
 
     return {
-      moduleLabel: 'Engines',
+      moduleLabel: 'Motores',
       type: 'maintenance.due_soon',
       severity: 'warn',
-      title: `Engine review scheduled - ${yachtName}`,
-      message: 'Preventive review of the main engine is recommended this week.',
-      actionLabel: 'Open engines',
+      title: `Revision de motores programada - ${yachtName}`,
+      message: 'Se recomienda ejecutar revision preventiva del motor principal esta semana.',
+      actionLabel: 'Ir a motores',
       actionUrl: `${safeBaseUrl}${sectionPath('engines')}`,
-      dueText: 'Recommended within the next 5 days.',
+      dueText: 'Recomendado dentro de los proximos 5 dias.',
       highlights: [
-        { label: 'Engine', value: 'Main #1' },
-        { label: 'Last review', value: '28 days ago' },
-        { label: 'Next review', value: 'This week' },
+        { label: 'Motor', value: 'Principal #1' },
+        { label: 'Ultima revision', value: 'Hace 28 dias' },
+        { label: 'Proxima revision', value: 'Esta semana' },
       ],
     };
   }
@@ -1348,17 +1348,17 @@ export class NotificationsService {
 
     const responsibleText = `${responsible.fullName} (${responsible.role})`;
     const nextHighlights = [
-      { label: 'Responsible', value: responsibleText },
+      { label: 'Responsable', value: responsibleText },
       ...details.highlights,
     ];
 
     if (responsible.email) {
-      nextHighlights.splice(1, 0, { label: 'Responsible email', value: responsible.email });
+      nextHighlights.splice(1, 0, { label: 'Correo responsable', value: responsible.email });
     }
 
     return {
       ...details,
-      message: `${details.message} Assigned responsible: ${responsibleText}.`,
+      message: `${details.message} Responsable asignado: ${responsibleText}.`,
       highlights: nextHighlights,
     };
   }
@@ -1388,7 +1388,7 @@ export class NotificationsService {
           userId: user.id,
           fullName: user.fullName,
           email: user.email,
-          role: user.role?.name ?? input.responsibleRole ?? 'Responsible',
+          role: user.role?.name ?? input.responsibleRole ?? 'Responsable',
           source: 'manual',
         };
       }
@@ -1396,9 +1396,9 @@ export class NotificationsService {
 
     if (input.responsibleName || input.responsibleEmail) {
       return {
-        fullName: input.responsibleName?.trim() || 'Responsible',
+        fullName: input.responsibleName?.trim() || 'Responsable',
         email: input.responsibleEmail?.trim() || undefined,
-        role: input.responsibleRole?.trim() || 'Responsible',
+        role: input.responsibleRole?.trim() || 'Responsable',
         source: 'manual',
       };
     }
@@ -1522,22 +1522,22 @@ export class NotificationsService {
     let remainingLabel: string;
     if (diffMs >= 0) {
       if (minutes < 60) {
-        remainingLabel = `Due in ${minutes} minute(s)`;
+        remainingLabel = `Faltan ${minutes} minuto(s)`;
       } else if (hours < 24) {
-        remainingLabel = `Due in ${hours} hour(s)`;
+        remainingLabel = `Faltan ${hours} hora(s)`;
       } else {
-        remainingLabel = `Due in ${days} day(s)`;
+        remainingLabel = `Faltan ${days} dia(s)`;
       }
     } else if (minutes < 60) {
-      remainingLabel = `Overdue by ${minutes} minute(s)`;
+      remainingLabel = `Vencido hace ${minutes} minuto(s)`;
     } else if (hours < 24) {
-      remainingLabel = `Overdue by ${hours} hour(s)`;
+      remainingLabel = `Vencido hace ${hours} hora(s)`;
     } else {
-      remainingLabel = `Overdue by ${days} day(s)`;
+      remainingLabel = `Vencido hace ${days} dia(s)`;
     }
 
     return {
-      dueText: `${remainingLabel} - ${this.formatDateLabel(diffMs >= 0 ? 'Due' : 'Expired', dueDate)}`,
+      dueText: `${remainingLabel} - ${this.formatDateLabel(diffMs >= 0 ? 'Vence' : 'Vencio', dueDate)}`,
       dueAtIso: dueDate.toISOString(),
       remainingLabel,
     };
@@ -1579,7 +1579,7 @@ export class NotificationsService {
     const responsibleHtml = input.responsible
       ? `
           <tr>
-            <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Responsible</td>
+            <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Responsable</td>
             <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">
               ${this.escapeHtml(input.responsible.fullName)} - ${this.escapeHtml(input.responsible.role)}
             </td>
@@ -1588,7 +1588,7 @@ export class NotificationsService {
             input.responsible.email
               ? `
           <tr>
-            <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Responsible email</td>
+            <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Correo responsable</td>
             <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">
               ${this.escapeHtml(input.responsible.email)}
             </td>
@@ -1605,7 +1605,7 @@ export class NotificationsService {
           <tr>
             <td style="padding:20px 24px;border-bottom:1px solid #1e293b;">
               <div style="font-size:20px;color:#f8fafc;font-weight:700;">Yacht PMS</div>
-              <div style="font-size:12px;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;">Operational notification</div>
+              <div style="font-size:12px;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;">Notificacion operativa</div>
             </td>
           </tr>
           <tr>
@@ -1615,20 +1615,20 @@ export class NotificationsService {
               </div>
               <h1 style="margin:14px 0 6px 0;color:#f8fafc;font-size:22px;line-height:1.3;">${this.escapeHtml(input.details.title)}</h1>
               <p style="margin:0 0 16px 0;color:#cbd5e1;font-size:14px;line-height:1.6;">
-                ${this.escapeHtml(input.recipientName ? `Hello ${input.recipientName}, ` : '')}${this.escapeHtml(input.details.message)}
+                ${this.escapeHtml(input.recipientName ? `Hola ${input.recipientName}, ` : '')}${this.escapeHtml(input.details.message)}
               </p>
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">
                 <tr>
-                  <td style="color:#94a3b8;font-size:12px;">Yacht</td>
+                  <td style="color:#94a3b8;font-size:12px;">Yate</td>
                   <td style="color:#f8fafc;font-size:12px;text-align:right;">${this.escapeHtml(input.yachtName)} (${this.escapeHtml(input.yachtFlag)})</td>
                 </tr>
                 <tr>
-                  <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Module</td>
+                  <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Modulo</td>
                   <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">${this.escapeHtml(input.details.moduleLabel)}</td>
                 </tr>
                 <tr>
-                  <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Reminder</td>
+                  <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Recordatorio</td>
                   <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">${this.escapeHtml(input.details.dueText)}</td>
                 </tr>
                 ${responsibleHtml}
@@ -1644,7 +1644,7 @@ export class NotificationsService {
           </tr>
           <tr>
             <td style="padding:14px 24px;border-top:1px solid #1e293b;color:#64748b;font-size:12px;">
-              This message is part of the Yacht PMS operational notification flow.
+              Mensaje generado automaticamente por Yacht PMS.
             </td>
           </tr>
         </table>
