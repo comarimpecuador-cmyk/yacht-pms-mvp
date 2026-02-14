@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationEvent, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
 import { EmailProvider } from '../../notifications/channels/email/email.provider';
@@ -21,6 +21,38 @@ type ResolvedPreference = {
   windowEnd: string;
   minSeverity: SeverityLevel;
   yachtsScope: string[];
+};
+
+type TestEmailScenario =
+  | 'inventory_low_stock'
+  | 'maintenance_due_this_week'
+  | 'documents_renewal_due'
+  | 'purchase_order_pending'
+  | 'engines_service_due';
+
+type ScenarioEmailRecipient = {
+  email: string;
+  name?: string;
+};
+
+type EmailScenarioDetails = {
+  moduleLabel: string;
+  type: string;
+  severity: SeverityLevel;
+  title: string;
+  message: string;
+  actionLabel: string;
+  actionUrl: string;
+  dueText: string;
+  highlights: Array<{ label: string; value: string }>;
+};
+
+type ResponsibleContact = {
+  userId?: string;
+  fullName: string;
+  email?: string;
+  role: string;
+  source: 'manual' | 'assignment' | 'fallback';
 };
 
 function normalizeResult(result: any): ProviderResult {
@@ -257,6 +289,261 @@ export class NotificationsService {
               : null,
       },
     });
+  }
+
+  async sendScenarioEmails(input: {
+    toEmail?: string;
+    toName?: string;
+    recipients?: ScenarioEmailRecipient[];
+    yachtId?: string;
+    scenarios?: TestEmailScenario[];
+    dueAt?: string;
+    responsibleUserId?: string;
+    responsibleName?: string;
+    responsibleEmail?: string;
+    responsibleRole?: string;
+  }) {
+    const recipients = this.normalizeScenarioRecipients(input.toEmail, input.toName, input.recipients);
+    if (recipients.length === 0) {
+      throw new BadRequestException('At least one recipient email is required');
+    }
+
+    const yacht = input.yachtId
+      ? await this.prisma.yacht.findUnique({
+          where: { id: input.yachtId },
+          select: { id: true, name: true, flag: true },
+        })
+      : await this.prisma.yacht.findFirst({
+          where: { isActive: true },
+          select: { id: true, name: true, flag: true },
+          orderBy: { createdAt: 'asc' },
+        });
+
+    const yachtName = yacht?.name ?? 'Yacht not defined';
+    const yachtId = yacht?.id;
+    const baseUrl = process.env.API_PUBLIC_BASE_URL?.trim() || 'https://yacht.reinotierra.com';
+    const scenarios =
+      input.scenarios && input.scenarios.length > 0
+        ? input.scenarios
+        : ([
+            'inventory_low_stock',
+            'maintenance_due_this_week',
+            'documents_renewal_due',
+            'purchase_order_pending',
+          ] as TestEmailScenario[]);
+
+    const results: Array<{
+      recipient: ScenarioEmailRecipient;
+      sent: number;
+      failed: number;
+      skipped: number;
+      scenarios: Array<{
+        scenario: TestEmailScenario;
+        status: 'sent' | 'failed' | 'skipped';
+        eventId: string | null;
+        responsible?: { fullName: string; role: string; email?: string };
+        error?: string;
+      }>;
+    }> = [];
+
+    for (const recipient of recipients) {
+      const scenarioResults: Array<{
+        scenario: TestEmailScenario;
+        status: 'sent' | 'failed' | 'skipped';
+        eventId: string | null;
+        responsible?: { fullName: string; role: string; email?: string };
+        error?: string;
+      }> = [];
+
+      for (const scenario of scenarios) {
+        const responsible = await this.resolveScenarioResponsible({
+          scenario,
+          yachtId,
+          responsibleUserId: input.responsibleUserId,
+          responsibleName: input.responsibleName,
+          responsibleEmail: input.responsibleEmail,
+          responsibleRole: input.responsibleRole,
+        });
+
+        const baseDetails = this.buildScenarioDetails(scenario, baseUrl, yachtId, yachtName);
+        const withResponsible = this.attachResponsibleToScenario(baseDetails, responsible);
+        const dueInfo = this.resolveDueInfo(withResponsible.dueText, input.dueAt);
+        const details: EmailScenarioDetails = {
+          ...withResponsible,
+          dueText: dueInfo.dueText,
+          highlights: dueInfo.remainingLabel
+            ? [{ label: 'Time remaining', value: dueInfo.remainingLabel }, ...withResponsible.highlights]
+            : withResponsible.highlights,
+        };
+
+        const htmlContent = this.buildScenarioEmailHtml({
+          yachtName,
+          yachtFlag: yacht?.flag ?? 'N/A',
+          recipientName: recipient.name,
+          details,
+          responsible,
+        });
+
+        const payload: Prisma.JsonObject = {
+          title: details.title,
+          message: details.message,
+          htmlContent,
+          module: details.moduleLabel,
+          scenario,
+          yachtName,
+          yachtId: yachtId ?? null,
+          dueText: details.dueText,
+          dueAt: dueInfo.dueAtIso ?? null,
+          remainingTime: dueInfo.remainingLabel ?? null,
+          responsibleName: responsible?.fullName ?? null,
+          responsibleEmail: responsible?.email ?? null,
+          responsibleRole: responsible?.role ?? null,
+          destinationEmail: recipient.email,
+          destinationName: recipient.name ?? null,
+          highlights: details.highlights.map((item) => `${item.label}: ${item.value}`),
+        };
+
+        const providerResult = normalizeResult(
+          await this.emailProvider.sendDirect({
+            toEmail: recipient.email,
+            toName: recipient.name,
+            type: details.type,
+            payload,
+          }),
+        );
+
+        const event = await this.prisma.notificationEvent.create({
+          data: {
+            userId: null,
+            yachtId: yachtId ?? null,
+            channel: 'email',
+            type: details.type,
+            payload,
+            status:
+              providerResult.status === 'failed'
+                ? 'failed'
+                : providerResult.status === 'sent'
+                  ? 'sent'
+                  : 'skipped',
+            dedupeKey: `scenario-email:${scenario}:${Date.now()}:${Math.random().toString(36).slice(2, 9)}`,
+            sentAt: providerResult.status === 'sent' ? new Date() : null,
+            error:
+              providerResult.status === 'failed'
+                ? providerResult.error
+                : providerResult.status === 'skipped'
+                  ? providerResult.reason ?? null
+                  : null,
+          },
+        });
+
+        scenarioResults.push({
+          scenario,
+          status: providerResult.status,
+          eventId: event.id,
+          responsible: responsible
+            ? {
+                fullName: responsible.fullName,
+                role: responsible.role,
+                email: responsible.email,
+              }
+            : undefined,
+          error:
+            providerResult.status === 'failed'
+              ? providerResult.error
+              : providerResult.status === 'skipped'
+                ? providerResult.reason
+                : undefined,
+        });
+      }
+
+      results.push({
+        recipient,
+        sent: scenarioResults.filter((item) => item.status === 'sent').length,
+        failed: scenarioResults.filter((item) => item.status === 'failed').length,
+        skipped: scenarioResults.filter((item) => item.status === 'skipped').length,
+        scenarios: scenarioResults,
+      });
+    }
+
+    return {
+      recipients,
+      yacht: yacht ? { id: yacht.id, name: yacht.name, flag: yacht.flag } : null,
+      sent: results.reduce((sum, item) => sum + item.sent, 0),
+      failed: results.reduce((sum, item) => sum + item.failed, 0),
+      skipped: results.reduce((sum, item) => sum + item.skipped, 0),
+      results,
+    };
+  }
+
+  async sendScenarioTestEmails(input: {
+    toEmail?: string;
+    toName?: string;
+    recipients?: ScenarioEmailRecipient[];
+    yachtId?: string;
+    scenarios?: TestEmailScenario[];
+    dueAt?: string;
+    responsibleUserId?: string;
+    responsibleName?: string;
+    responsibleEmail?: string;
+    responsibleRole?: string;
+  }) {
+    return this.sendScenarioEmails(input);
+  }
+
+  async listEmailRecipients(yachtId?: string) {
+    if (!yachtId) {
+      const users = await this.prisma.user.findMany({
+        where: { isActive: true },
+        orderBy: { fullName: 'asc' },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: { select: { name: true } },
+        },
+      });
+
+      return users.map((user) => ({
+        userId: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role?.name ?? 'Unknown',
+      }));
+    }
+
+    const accesses = await this.prisma.userYachtAccess.findMany({
+      where: {
+        yachtId,
+        revokedAt: null,
+        user: { isActive: true },
+      },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            role: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    const unique = new Map<string, { userId: string; fullName: string; email: string; role: string }>();
+    for (const access of accesses) {
+      if (!access.user) continue;
+      if (!unique.has(access.user.id)) {
+        unique.set(access.user.id, {
+          userId: access.user.id,
+          fullName: access.user.fullName,
+          email: access.user.email,
+          role: access.roleNameOverride || access.user.role?.name || 'Unknown',
+        });
+      }
+    }
+
+    return Array.from(unique.values()).sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 
   async listInApp(userId: string) {
@@ -916,6 +1203,462 @@ export class NotificationsService {
     if (status === 'closed') return 'Cerrado';
     if (status === 'cancelled') return 'Cancelado';
     return null;
+  }
+
+  private normalizeScenarioRecipients(
+    toEmail?: string,
+    toName?: string,
+    recipients?: ScenarioEmailRecipient[],
+  ): ScenarioEmailRecipient[] {
+    const draft: ScenarioEmailRecipient[] = [];
+
+    const normalizedSingleEmail = toEmail?.trim();
+    if (normalizedSingleEmail) {
+      draft.push({
+        email: normalizedSingleEmail.toLowerCase(),
+        name: toName?.trim() || undefined,
+      });
+    }
+
+    if (Array.isArray(recipients)) {
+      for (const recipient of recipients) {
+        const email = recipient?.email?.trim().toLowerCase();
+        if (!email) continue;
+        draft.push({
+          email,
+          name: recipient.name?.trim() || undefined,
+        });
+      }
+    }
+
+    const unique = new Map<string, ScenarioEmailRecipient>();
+    for (const recipient of draft) {
+      if (!unique.has(recipient.email)) {
+        unique.set(recipient.email, recipient);
+      }
+    }
+
+    return Array.from(unique.values());
+  }
+
+  private buildScenarioDetails(
+    scenario: TestEmailScenario,
+    baseUrl: string,
+    yachtId: string | undefined,
+    yachtName: string,
+  ): EmailScenarioDetails {
+    const safeBaseUrl = baseUrl.replace(/\/+$/, '');
+    const sectionPath = (section: string) =>
+      yachtId ? `/yachts/${yachtId}/${section}` : '/dashboard';
+
+    if (scenario === 'inventory_low_stock') {
+      return {
+        moduleLabel: 'Inventory',
+        type: 'inventory.low_stock',
+        severity: 'warn',
+        title: `Low stock detected in ${yachtName}`,
+        message: 'Spare part "Main oil filter" dropped to 2 units and is below minimum stock.',
+        actionLabel: 'Review inventory',
+        actionUrl: `${safeBaseUrl}${sectionPath('inventory')}`,
+        dueText: 'Handle this today to avoid stockout.',
+        highlights: [
+          { label: 'Part', value: 'Main oil filter' },
+          { label: 'Current stock', value: '2 units' },
+          { label: 'Minimum stock', value: '5 units' },
+        ],
+      };
+    }
+
+    if (scenario === 'maintenance_due_this_week') {
+      return {
+        moduleLabel: 'Maintenance',
+        type: 'maintenance.due_soon',
+        severity: 'warn',
+        title: `Scheduled maintenance this week - ${yachtName}`,
+        message: 'Task "Main engine cooling system review" is due this week.',
+        actionLabel: 'View maintenance',
+        actionUrl: `${safeBaseUrl}${sectionPath('maintenance')}`,
+        dueText: 'Due in 3 days.',
+        highlights: [
+          { label: 'Task', value: 'Main engine cooling system review' },
+          { label: 'Priority', value: 'High' },
+          { label: 'Due', value: 'This week' },
+        ],
+      };
+    }
+
+    if (scenario === 'documents_renewal_due') {
+      return {
+        moduleLabel: 'Documents',
+        type: 'documents.expiring',
+        severity: 'critical',
+        title: `Document renewal approaching - ${yachtName}`,
+        message: 'Navigation certificate expires soon and renewal must be started.',
+        actionLabel: 'Open documents',
+        actionUrl: `${safeBaseUrl}${sectionPath('documents')}`,
+        dueText: 'Due in 7 days.',
+        highlights: [
+          { label: 'Document', value: 'Navigation certificate' },
+          { label: 'Status', value: 'Expiring soon' },
+          { label: 'Action', value: 'Start renewal' },
+        ],
+      };
+    }
+
+    if (scenario === 'purchase_order_pending') {
+      return {
+        moduleLabel: 'Purchase orders',
+        type: 'po.submitted',
+        severity: 'info',
+        title: `Purchase order pending approval - ${yachtName}`,
+        message: 'Order PO-2026-0042 was submitted and is pending approval.',
+        actionLabel: 'Review purchase orders',
+        actionUrl: `${safeBaseUrl}${sectionPath('purchase-orders')}`,
+        dueText: 'Pending approval since today.',
+        highlights: [
+          { label: 'PO', value: 'PO-2026-0042' },
+          { label: 'Vendor', value: 'Marine Parts Supply' },
+          { label: 'Amount', value: 'USD 3,240' },
+        ],
+      };
+    }
+
+    return {
+      moduleLabel: 'Engines',
+      type: 'maintenance.due_soon',
+      severity: 'warn',
+      title: `Engine review scheduled - ${yachtName}`,
+      message: 'Preventive review of the main engine is recommended this week.',
+      actionLabel: 'Open engines',
+      actionUrl: `${safeBaseUrl}${sectionPath('engines')}`,
+      dueText: 'Recommended within the next 5 days.',
+      highlights: [
+        { label: 'Engine', value: 'Main #1' },
+        { label: 'Last review', value: '28 days ago' },
+        { label: 'Next review', value: 'This week' },
+      ],
+    };
+  }
+
+  private attachResponsibleToScenario(
+    details: EmailScenarioDetails,
+    responsible: ResponsibleContact | null,
+  ): EmailScenarioDetails {
+    if (!responsible) return details;
+
+    const responsibleText = `${responsible.fullName} (${responsible.role})`;
+    const nextHighlights = [
+      { label: 'Responsible', value: responsibleText },
+      ...details.highlights,
+    ];
+
+    if (responsible.email) {
+      nextHighlights.splice(1, 0, { label: 'Responsible email', value: responsible.email });
+    }
+
+    return {
+      ...details,
+      message: `${details.message} Assigned responsible: ${responsibleText}.`,
+      highlights: nextHighlights,
+    };
+  }
+
+  private async resolveScenarioResponsible(input: {
+    scenario: TestEmailScenario;
+    yachtId?: string;
+    responsibleUserId?: string;
+    responsibleName?: string;
+    responsibleEmail?: string;
+    responsibleRole?: string;
+  }): Promise<ResponsibleContact | null> {
+    if (input.responsibleUserId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: input.responsibleUserId },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          isActive: true,
+          role: { select: { name: true } },
+        },
+      });
+
+      if (user?.isActive) {
+        return {
+          userId: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role?.name ?? input.responsibleRole ?? 'Responsible',
+          source: 'manual',
+        };
+      }
+    }
+
+    if (input.responsibleName || input.responsibleEmail) {
+      return {
+        fullName: input.responsibleName?.trim() || 'Responsible',
+        email: input.responsibleEmail?.trim() || undefined,
+        role: input.responsibleRole?.trim() || 'Responsible',
+        source: 'manual',
+      };
+    }
+
+    const preferredRoles = this.getPreferredRolesForScenario(input.scenario);
+    const candidate = await this.findResponsibleByRoles(preferredRoles, input.yachtId);
+    if (candidate) return candidate;
+
+    return null;
+  }
+
+  private getPreferredRolesForScenario(scenario: TestEmailScenario): string[] {
+    if (scenario === 'inventory_low_stock') {
+      return ['Chief Engineer', 'Captain', 'Management/Office', 'Admin'];
+    }
+    if (scenario === 'maintenance_due_this_week' || scenario === 'engines_service_due') {
+      return ['Chief Engineer', 'Captain', 'Management/Office'];
+    }
+    if (scenario === 'documents_renewal_due') {
+      return ['Captain', 'Management/Office', 'Admin'];
+    }
+    if (scenario === 'purchase_order_pending') {
+      return ['Management/Office', 'Captain', 'Admin'];
+    }
+    return ['Captain', 'Management/Office', 'Admin'];
+  }
+
+  private async findResponsibleByRoles(
+    roles: string[],
+    yachtId?: string,
+  ): Promise<ResponsibleContact | null> {
+    if (roles.length === 0) return null;
+
+    if (yachtId) {
+      for (const roleName of roles) {
+        const access = await this.prisma.userYachtAccess.findFirst({
+          where: {
+            yachtId,
+            revokedAt: null,
+            user: { isActive: true },
+            OR: [
+              { roleNameOverride: roleName },
+              { user: { role: { name: roleName } } },
+            ],
+          },
+          orderBy: { createdAt: 'asc' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                role: { select: { name: true } },
+              },
+            },
+          },
+        });
+
+        if (access?.user) {
+          return {
+            userId: access.user.id,
+            fullName: access.user.fullName,
+            email: access.user.email,
+            role: access.roleNameOverride || access.user.role?.name || roleName,
+            source: 'assignment',
+          };
+        }
+      }
+    }
+
+    for (const roleName of roles) {
+      const user = await this.prisma.user.findFirst({
+        where: {
+          isActive: true,
+          role: { name: roleName },
+        },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: { select: { name: true } },
+        },
+      });
+
+      if (user) {
+        return {
+          userId: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role?.name || roleName,
+          source: 'fallback',
+        };
+      }
+    }
+
+    return null;
+  }
+
+  private resolveDueInfo(defaultDueText: string, dueAtRaw?: string): {
+    dueText: string;
+    dueAtIso?: string;
+    remainingLabel?: string;
+  } {
+    if (!dueAtRaw) {
+      return { dueText: defaultDueText };
+    }
+
+    const dueDate = new Date(dueAtRaw);
+    if (Number.isNaN(dueDate.getTime())) {
+      return { dueText: defaultDueText };
+    }
+
+    const now = new Date();
+    const diffMs = dueDate.getTime() - now.getTime();
+    const absMs = Math.abs(diffMs);
+    const minutes = Math.ceil(absMs / (60 * 1000));
+    const hours = Math.ceil(absMs / (60 * 60 * 1000));
+    const days = Math.ceil(absMs / (24 * 60 * 60 * 1000));
+
+    let remainingLabel: string;
+    if (diffMs >= 0) {
+      if (minutes < 60) {
+        remainingLabel = `Due in ${minutes} minute(s)`;
+      } else if (hours < 24) {
+        remainingLabel = `Due in ${hours} hour(s)`;
+      } else {
+        remainingLabel = `Due in ${days} day(s)`;
+      }
+    } else if (minutes < 60) {
+      remainingLabel = `Overdue by ${minutes} minute(s)`;
+    } else if (hours < 24) {
+      remainingLabel = `Overdue by ${hours} hour(s)`;
+    } else {
+      remainingLabel = `Overdue by ${days} day(s)`;
+    }
+
+    return {
+      dueText: `${remainingLabel} - ${this.formatDateLabel(diffMs >= 0 ? 'Due' : 'Expired', dueDate)}`,
+      dueAtIso: dueDate.toISOString(),
+      remainingLabel,
+    };
+  }
+
+  private formatDateLabel(prefix: string, date: Date) {
+    const formatted = new Intl.DateTimeFormat('es-EC', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+    return `${prefix} ${formatted}`;
+  }
+
+  private buildScenarioEmailHtml(input: {
+    yachtName: string;
+    yachtFlag: string;
+    recipientName?: string;
+    details: EmailScenarioDetails;
+    responsible?: ResponsibleContact | null;
+  }) {
+    const severityColor =
+      input.details.severity === 'critical'
+        ? '#ef4444'
+        : input.details.severity === 'warn'
+          ? '#f59e0b'
+          : '#38bdf8';
+
+    const highlightsHtml = input.details.highlights
+      .map(
+        (item) => `
+          <tr>
+            <td style="padding:6px 0;color:#94a3b8;font-size:13px;">${this.escapeHtml(item.label)}</td>
+            <td style="padding:6px 0;color:#e2e8f0;font-size:13px;text-align:right;">${this.escapeHtml(item.value)}</td>
+          </tr>
+        `,
+      )
+      .join('');
+
+    const responsibleHtml = input.responsible
+      ? `
+          <tr>
+            <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Responsible</td>
+            <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">
+              ${this.escapeHtml(input.responsible.fullName)} - ${this.escapeHtml(input.responsible.role)}
+            </td>
+          </tr>
+          ${
+            input.responsible.email
+              ? `
+          <tr>
+            <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Responsible email</td>
+            <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">
+              ${this.escapeHtml(input.responsible.email)}
+            </td>
+          </tr>
+          `
+              : ''
+          }
+        `
+      : '';
+
+    return `
+      <div style="margin:0;padding:24px;background:#020617;font-family:Inter,Segoe UI,Arial,sans-serif;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#0b1220;border:1px solid #1e293b;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="padding:20px 24px;border-bottom:1px solid #1e293b;">
+              <div style="font-size:20px;color:#f8fafc;font-weight:700;">Yacht PMS</div>
+              <div style="font-size:12px;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;">Operational notification</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 24px;">
+              <div style="display:inline-block;background:${severityColor};color:#0b1220;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:uppercase;">
+                ${this.escapeHtml(input.details.severity)}
+              </div>
+              <h1 style="margin:14px 0 6px 0;color:#f8fafc;font-size:22px;line-height:1.3;">${this.escapeHtml(input.details.title)}</h1>
+              <p style="margin:0 0 16px 0;color:#cbd5e1;font-size:14px;line-height:1.6;">
+                ${this.escapeHtml(input.recipientName ? `Hello ${input.recipientName}, ` : '')}${this.escapeHtml(input.details.message)}
+              </p>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">
+                <tr>
+                  <td style="color:#94a3b8;font-size:12px;">Yacht</td>
+                  <td style="color:#f8fafc;font-size:12px;text-align:right;">${this.escapeHtml(input.yachtName)} (${this.escapeHtml(input.yachtFlag)})</td>
+                </tr>
+                <tr>
+                  <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Module</td>
+                  <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">${this.escapeHtml(input.details.moduleLabel)}</td>
+                </tr>
+                <tr>
+                  <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Reminder</td>
+                  <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">${this.escapeHtml(input.details.dueText)}</td>
+                </tr>
+                ${responsibleHtml}
+                ${highlightsHtml}
+              </table>
+
+              <div style="margin-top:18px;">
+                <a href="${this.escapeHtml(input.details.actionUrl)}" style="display:inline-block;background:#1d4ed8;color:#eff6ff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 14px;border-radius:8px;">
+                  ${this.escapeHtml(input.details.actionLabel)}
+                </a>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 24px;border-top:1px solid #1e293b;color:#64748b;font-size:12px;">
+              This message is part of the Yacht PMS operational notification flow.
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+  }
+
+  private escapeHtml(input: string) {
+    return input
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private async createSkippedEvent(input: {

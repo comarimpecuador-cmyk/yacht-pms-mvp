@@ -18,6 +18,7 @@ import {
   TestNotificationRuleDto,
   UpdateNotificationRuleDto,
 } from './dto/notification-rules.dto';
+import { SendScenarioEmailsDto, SendTestEmailsDto } from './dto/test-email.dto';
 import { NotificationRulesService } from './notification-rules.service';
 import { NotificationsService } from './notifications.service';
 
@@ -153,5 +154,34 @@ export class NotificationsController {
   @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
   testRule(@Param('id') id: string, @Body() body: TestNotificationRuleDto) {
     return this.notificationRulesService.testRule(id, body);
+  }
+
+  @Post('email/scenarios/send')
+  @Roles('Management/Office', 'Admin')
+  sendEmailScenarios(@Body() body: SendScenarioEmailsDto) {
+    return this.notificationsService.sendScenarioEmails({
+      toEmail: body.toEmail,
+      toName: body.toName,
+      recipients: body.recipients,
+      yachtId: body.yachtId,
+      scenarios: body.scenarios,
+      dueAt: body.dueAt,
+      responsibleUserId: body.responsibleUserId,
+      responsibleName: body.responsibleName,
+      responsibleEmail: body.responsibleEmail,
+      responsibleRole: body.responsibleRole,
+    });
+  }
+
+  @Get('email/recipients')
+  @Roles('Management/Office', 'Admin')
+  listEmailRecipients(@Query('yachtId') yachtId?: string) {
+    return this.notificationsService.listEmailRecipients(yachtId);
+  }
+
+  @Post('test/email-scenarios')
+  @Roles('Management/Office', 'Admin')
+  sendEmailScenariosLegacy(@Body() body: SendTestEmailsDto) {
+    return this.sendEmailScenarios(body);
   }
 }

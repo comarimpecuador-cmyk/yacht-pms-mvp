@@ -3,6 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma.service';
 import { NotificationChannelProvider, SendNotificationInput } from '../channel.types';
 
+type DirectEmailInput = {
+  toEmail: string;
+  toName?: string;
+  type: string;
+  payload: Record<string, unknown>;
+};
+
 @Injectable()
 export class EmailProvider implements NotificationChannelProvider {
   channel: 'email' = 'email';
@@ -13,11 +20,9 @@ export class EmailProvider implements NotificationChannelProvider {
   ) {}
 
   async send(input: SendNotificationInput) {
-    const provider = this.configService.get<string>('EMAIL_PROVIDER', 'disabled').toLowerCase();
-    const enabled = this.configService.get<string>('EMAIL_ENABLED', 'false') === 'true';
-
-    if (!enabled) {
-      return { status: 'skipped' as const, reason: 'email_disabled' };
+    const providerCheck = this.validateProviderEnabled();
+    if (providerCheck.status !== 'ready') {
+      return providerCheck.result;
     }
 
     const recipient = await this.prisma.user.findUnique({
@@ -29,14 +34,61 @@ export class EmailProvider implements NotificationChannelProvider {
       return { status: 'failed' as const, error: 'recipient_not_found_or_inactive' };
     }
 
-    if (provider === 'brevo') {
-      return this.sendViaBrevo(input, recipient.email, recipient.fullName);
-    }
-
-    return { status: 'failed' as const, error: `unsupported_email_provider:${provider}` };
+    return this.sendViaBrevo({
+      toEmail: recipient.email,
+      toName: recipient.fullName,
+      subject: this.pickText(input.payload, ['title']) ?? `Yacht PMS - ${input.type}`,
+      htmlContent:
+        this.pickText(input.payload, ['htmlContent']) ??
+        this.buildDefaultHtml(input.payload, 'You have an operational notification in Yacht PMS.'),
+    });
   }
 
-  private async sendViaBrevo(input: SendNotificationInput, toEmail: string, toName?: string) {
+  async sendDirect(input: DirectEmailInput) {
+    const providerCheck = this.validateProviderEnabled();
+    if (providerCheck.status !== 'ready') {
+      return providerCheck.result;
+    }
+
+    return this.sendViaBrevo({
+      toEmail: input.toEmail,
+      toName: input.toName,
+      subject: this.pickText(input.payload, ['title']) ?? `Yacht PMS - ${input.type}`,
+      htmlContent:
+        this.pickText(input.payload, ['htmlContent']) ??
+        this.buildDefaultHtml(input.payload, 'You have an operational notification in Yacht PMS.'),
+    });
+  }
+
+  private validateProviderEnabled():
+    | { status: 'ready' }
+    | {
+        status: 'blocked';
+        result: { status: 'skipped'; reason: string } | { status: 'failed'; error: string };
+      } {
+    const provider = this.configService.get<string>('EMAIL_PROVIDER', 'disabled').toLowerCase();
+    const enabled = this.configService.get<string>('EMAIL_ENABLED', 'false') === 'true';
+
+    if (!enabled) {
+      return { status: 'blocked', result: { status: 'skipped', reason: 'email_disabled' } };
+    }
+
+    if (provider !== 'brevo') {
+      return {
+        status: 'blocked',
+        result: { status: 'failed', error: `unsupported_email_provider:${provider}` },
+      };
+    }
+
+    return { status: 'ready' };
+  }
+
+  private async sendViaBrevo(input: {
+    toEmail: string;
+    toName?: string;
+    subject: string;
+    htmlContent: string;
+  }) {
     const apiKey = this.configService.get<string>('BREVO_API_KEY', '').trim();
     const fromEmail = this.configService.get<string>('EMAIL_FROM', '').trim();
     const fromName = this.configService.get<string>('EMAIL_FROM_NAME', 'Yacht PMS').trim();
@@ -48,11 +100,6 @@ export class EmailProvider implements NotificationChannelProvider {
       return { status: 'failed' as const, error: 'email_from_missing' };
     }
 
-    const title = this.pickText(input.payload, ['title']) ?? `Yacht PMS · ${input.type}`;
-    const message =
-      this.pickText(input.payload, ['message', 'description']) ??
-      'Tienes una nueva notificacion operativa.';
-
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -61,9 +108,9 @@ export class EmailProvider implements NotificationChannelProvider {
       },
       body: JSON.stringify({
         sender: { email: fromEmail, name: fromName },
-        to: [{ email: toEmail, name: toName || undefined }],
-        subject: title,
-        htmlContent: `<p>${this.escapeHtml(message)}</p>`,
+        to: [{ email: input.toEmail, name: input.toName || undefined }],
+        subject: input.subject,
+        htmlContent: input.htmlContent,
       }),
     });
 
@@ -83,6 +130,11 @@ export class EmailProvider implements NotificationChannelProvider {
       }
     }
     return null;
+  }
+
+  private buildDefaultHtml(payload: Record<string, unknown>, fallbackMessage: string) {
+    const message = this.pickText(payload, ['message', 'description']) ?? fallbackMessage;
+    return `<p>${this.escapeHtml(message)}</p>`;
   }
 
   private escapeHtml(input: string) {
