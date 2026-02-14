@@ -424,7 +424,7 @@ export default function NotificationSettingsPage() {
             type="button"
             onClick={saveSettings}
             disabled={saving}
-            className="rounded bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 disabled:opacity-50"
+            className="btn-primary"
           >
             {saving ? 'Guardando...' : 'Guardar preferencias'}
           </button>
@@ -541,7 +541,7 @@ export default function NotificationSettingsPage() {
             type="button"
             onClick={sendScenarioEmail}
             disabled={sendingEmail}
-            className="rounded bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 disabled:opacity-50"
+            className="btn-primary"
           >
             {sendingEmail ? 'Enviando...' : 'Enviar correo operativo'}
           </button>
