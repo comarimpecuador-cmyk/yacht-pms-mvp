@@ -210,6 +210,12 @@ export default function YachtDocumentsPage() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [documentsTotal, setDocumentsTotal] = useState(0);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<YachtDocument | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<YachtDocument | null>(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -229,6 +235,29 @@ export default function YachtDocumentsPage() {
     note: '',
   });
   const [versionFile, setVersionFile] = useState<File | null>(null);
+  const [editForm, setEditForm] = useState({
+    documentId: '',
+    title: '',
+    docType: '',
+    docSubType: '',
+    confidentiality: 'crew_only' as DocumentConfidentiality,
+    tags: '',
+    identifier: '',
+    issuedAt: '',
+    expiryDate: '',
+    notes: '',
+  });
+  const [evidenceForm, setEvidenceForm] = useState({
+    documentId: '',
+    fileUrl: '',
+    comment: '',
+  });
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [renewalForm, setRenewalForm] = useState({
+    documentId: '',
+    renewalId: '',
+    nextExpiry: '',
+  });
 
   const role = user?.role || '';
   const canManage = ['Chief Engineer', 'Captain', 'Management/Office', 'Admin', 'SystemAdmin'].includes(role);
@@ -305,8 +334,9 @@ export default function YachtDocumentsPage() {
       const detail = await api.get<YachtDocument>(`/documents/${encodeURIComponent(documentId)}`);
       setSelectedDocument(detail);
       setShowDetailModal(true);
+      setModalError(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo cargar el detalle del documento');
+      setError(err instanceof Error ? err.message : 'No se pudo cargar el detalle del documento');
     }
   }, []);
 
@@ -366,10 +396,11 @@ export default function YachtDocumentsPage() {
         initialVersion,
       });
       setShowCreateModal(false);
+      setModalError(null);
       resetForm();
       await fetchData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo crear el documento');
+      setModalError(err instanceof Error ? err.message : 'No se pudo crear el documento');
     } finally {
       setSaving(false);
     }
@@ -384,62 +415,158 @@ export default function YachtDocumentsPage() {
         await openDocumentDetail(documentId);
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo ejecutar la accion');
+      const message = err instanceof Error ? err.message : 'No se pudo ejecutar la accion';
+      if (showDetailModal) {
+        setModalError(message);
+      } else {
+        setError(message);
+      }
     } finally {
       setActionLoadingId(null);
     }
   };
 
-  const handleEditExpiry = (doc: YachtDocument) => {
-    const value = window.prompt(
-      'Nueva fecha de vencimiento (YYYY-MM-DD, dejar vacio para quitar)',
-      doc.expiryDate ? doc.expiryDate.slice(0, 10) : '',
-    );
-    if (value === null) return;
-    void runAction(doc.id, () =>
-      api.patch(`/documents/${doc.id}`, {
-        expiryDate: value.trim() === '' ? '' : new Date(value).toISOString(),
-      }),
-    );
+  const openEditModal = (doc: YachtDocument) => {
+    setEditForm({
+      documentId: doc.id,
+      title: doc.title || '',
+      docType: doc.docType,
+      docSubType: doc.docSubType || '',
+      confidentiality: doc.confidentiality || 'crew_only',
+      tags: (doc.tags || []).join(', '),
+      identifier: doc.identifier || '',
+      issuedAt: doc.issuedAt ? doc.issuedAt.slice(0, 10) : '',
+      expiryDate: doc.expiryDate ? doc.expiryDate.slice(0, 10) : '',
+      notes: doc.notes || '',
+    });
+    setModalError(null);
+    setShowEditModal(true);
   };
 
-  const handleArchive = (doc: YachtDocument) => {
-    const confirmed = window.confirm(`Archivar documento "${doc.docType}"?`);
-    if (!confirmed) return;
-    void runAction(doc.id, () => api.post(`/documents/${doc.id}/archive`, {}));
+  const submitEditDocument = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!editForm.documentId) return;
+
+    setSaving(true);
+    setModalError(null);
+    try {
+      await api.patch(`/documents/${editForm.documentId}`, {
+        title: editForm.title.trim(),
+        docType: editForm.docType.trim(),
+        docSubType: editForm.docSubType.trim() || undefined,
+        confidentiality: editForm.confidentiality,
+        tags: editForm.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        identifier: editForm.identifier.trim() || undefined,
+        issuedAt: editForm.issuedAt ? new Date(editForm.issuedAt).toISOString() : '',
+        expiryDate: editForm.expiryDate ? new Date(editForm.expiryDate).toISOString() : '',
+        notes: editForm.notes.trim() || undefined,
+      });
+      setShowEditModal(false);
+      await fetchData();
+      if (showDetailModal && selectedDocument?.id === editForm.documentId) {
+        await openDocumentDetail(editForm.documentId);
+      }
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : 'No se pudo actualizar el documento');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleAddEvidence = (doc: YachtDocument) => {
-    const fileUrl = window.prompt('URL del archivo de evidencia');
-    if (!fileUrl || fileUrl.trim() === '') return;
-    const comment = window.prompt('Comentario (opcional)') || '';
-    void runAction(doc.id, () =>
-      api.post(`/documents/${doc.id}/evidences`, {
-        fileUrl: fileUrl.trim(),
-        comment: comment.trim() || undefined,
-      }),
-    );
+  const openEvidenceModal = (doc: YachtDocument) => {
+    setEvidenceForm({
+      documentId: doc.id,
+      fileUrl: '',
+      comment: '',
+    });
+    setEvidenceFile(null);
+    setModalError(null);
+    setShowEvidenceModal(true);
   };
 
   const handleStartRenewal = (doc: YachtDocument) => {
     void runAction(doc.id, () => api.post(`/documents/${doc.id}/renewals`, {}));
   };
 
-  const handleCompleteRenewal = (doc: YachtDocument) => {
+  const openCompleteRenewalModal = (doc: YachtDocument) => {
     const inProgress = doc.renewals.find((item) => item.status === 'IN_PROGRESS');
     if (!inProgress) {
-      alert('No hay renovacion en progreso para este documento.');
+      setError('No hay renovacion en progreso para este documento.');
       return;
     }
-    const nextExpiry = window.prompt('Nueva fecha de vencimiento (YYYY-MM-DD)', doc.expiryDate ? doc.expiryDate.slice(0, 10) : '');
-    if (!nextExpiry || nextExpiry.trim() === '') return;
+    setRenewalForm({
+      documentId: doc.id,
+      renewalId: inProgress.id,
+      nextExpiry: doc.expiryDate ? doc.expiryDate.slice(0, 10) : '',
+    });
+    setModalError(null);
+    setShowRenewalModal(true);
+  };
 
-    void runAction(doc.id, () =>
-      api.patch(`/documents/${doc.id}/renewals/${inProgress.id}`, {
+  const submitEvidence = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!evidenceForm.documentId) return;
+
+    setSaving(true);
+    setModalError(null);
+    try {
+      let fileUrl = evidenceForm.fileUrl.trim();
+
+      if (evidenceFile) {
+        const uploaded = await uploadFile(evidenceFile);
+        fileUrl = uploaded.fileUrl;
+      }
+
+      if (!fileUrl) {
+        setModalError('Sube un archivo o ingresa un enlace de evidencia.');
+        return;
+      }
+
+      await api.post(`/documents/${evidenceForm.documentId}/evidences`, {
+        fileUrl,
+        comment: evidenceForm.comment.trim() || undefined,
+      });
+      setShowEvidenceModal(false);
+      setEvidenceFile(null);
+      await fetchData();
+      if (showDetailModal && selectedDocument?.id === evidenceForm.documentId) {
+        await openDocumentDetail(evidenceForm.documentId);
+      }
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : 'No se pudo adjuntar la evidencia');
+    } finally {
+      setSaving(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const submitCompleteRenewal = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!renewalForm.documentId || !renewalForm.renewalId || !renewalForm.nextExpiry) {
+      setModalError('Debes seleccionar la nueva fecha de vencimiento.');
+      return;
+    }
+
+    setSaving(true);
+    setModalError(null);
+    try {
+      await api.patch(`/documents/${renewalForm.documentId}/renewals/${renewalForm.renewalId}`, {
         status: 'COMPLETED',
-        newExpiryDate: new Date(nextExpiry).toISOString(),
-      }),
-    );
+        newExpiryDate: new Date(renewalForm.nextExpiry).toISOString(),
+      });
+      setShowRenewalModal(false);
+      await fetchData();
+      if (showDetailModal && selectedDocument?.id === renewalForm.documentId) {
+        await openDocumentDetail(renewalForm.documentId);
+      }
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : 'No se pudo completar la renovacion');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const openVersionModal = (documentId: string) => {
@@ -448,6 +575,7 @@ export default function YachtDocumentsPage() {
       note: '',
     });
     setVersionFile(null);
+    setModalError(null);
     setShowVersionModal(true);
   };
 
@@ -455,10 +583,11 @@ export default function YachtDocumentsPage() {
     event.preventDefault();
     if (!versionForm.documentId) return;
     if (!versionFile) {
-      alert('Debe seleccionar un archivo');
+      setModalError('Debe seleccionar un archivo');
       return;
     }
     setSaving(true);
+    setModalError(null);
     try {
       const uploaded = await uploadFile(versionFile);
       await api.post(`/documents/${versionForm.documentId}/versions`, {
@@ -470,9 +599,10 @@ export default function YachtDocumentsPage() {
         note: versionForm.note.trim() || undefined,
       });
       setShowVersionModal(false);
+      setModalError(null);
       await fetchData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo subir la version');
+      setModalError(err instanceof Error ? err.message : 'No se pudo subir la version');
     } finally {
       setSaving(false);
     }
@@ -482,6 +612,7 @@ export default function YachtDocumentsPage() {
     setReviewDocumentId(documentId);
     setReviewAction(action);
     setReviewReason('');
+    setModalError(null);
     setShowReviewModal(true);
   };
 
@@ -490,6 +621,7 @@ export default function YachtDocumentsPage() {
     if (!reviewDocumentId) return;
 
     setSaving(true);
+    setModalError(null);
     try {
       if (reviewAction === 'submit') {
         await api.post(`/documents/${reviewDocumentId}/submit`, { reason: reviewReason.trim() });
@@ -502,18 +634,26 @@ export default function YachtDocumentsPage() {
       await fetchData();
       await openDocumentDetail(reviewDocumentId);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo completar la accion');
+      setModalError(err instanceof Error ? err.message : 'No se pudo completar la accion');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = (doc: YachtDocument) => {
-    const confirmed = window.confirm(`Eliminar documento "${doc.title || doc.docType}"? Esta accion no se puede deshacer.`);
-    if (!confirmed) return;
-    void runAction(doc.id, async () => {
-      await api.delete(`/documents/${doc.id}`);
-      if (selectedDocument?.id === doc.id) {
+  const confirmArchiveDocument = () => {
+    if (!archiveTarget) return;
+    const documentId = archiveTarget.id;
+    setArchiveTarget(null);
+    void runAction(documentId, () => api.post(`/documents/${documentId}/archive`, {}));
+  };
+
+  const confirmDeleteDocument = () => {
+    if (!deleteTarget) return;
+    const documentId = deleteTarget.id;
+    setDeleteTarget(null);
+    void runAction(documentId, async () => {
+      await api.delete(`/documents/${documentId}`);
+      if (selectedDocument?.id === documentId) {
         setShowDetailModal(false);
         setSelectedDocument(null);
       }
@@ -526,7 +666,7 @@ export default function YachtDocumentsPage() {
         type="button"
         onClick={() => void openDocumentDetail(doc.id)}
         disabled={actionLoadingId === doc.id}
-        className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
+        className="btn-secondary !px-3 !py-1.5 !text-xs"
       >
         Detalle
       </button>
@@ -534,9 +674,9 @@ export default function YachtDocumentsPage() {
         <>
           <button
             type="button"
-            onClick={() => handleEditExpiry(doc)}
+            onClick={() => openEditModal(doc)}
             disabled={actionLoadingId === doc.id}
-            className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
+            className="btn-secondary !px-3 !py-1.5 !text-xs"
           >
             Editar
           </button>
@@ -544,15 +684,15 @@ export default function YachtDocumentsPage() {
             type="button"
             onClick={() => openVersionModal(doc.id)}
             disabled={actionLoadingId === doc.id}
-            className="rounded border border-indigo-300 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-50"
+            className="btn-primary !px-3 !py-1.5 !text-xs"
           >
             Nueva version
           </button>
           <button
             type="button"
-            onClick={() => handleAddEvidence(doc)}
+            onClick={() => openEvidenceModal(doc)}
             disabled={actionLoadingId === doc.id}
-            className="rounded border border-border px-2 py-1 text-xs text-text-primary hover:bg-surface-hover"
+            className="btn-secondary !px-3 !py-1.5 !text-xs"
           >
             Evidencia
           </button>
@@ -561,7 +701,7 @@ export default function YachtDocumentsPage() {
               type="button"
               onClick={() => handleStartRenewal(doc)}
               disabled={actionLoadingId === doc.id}
-              className="rounded border border-indigo-300 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-50"
+              className="btn-primary !px-3 !py-1.5 !text-xs"
             >
               Iniciar renovacion
             </button>
@@ -569,9 +709,9 @@ export default function YachtDocumentsPage() {
           {doc.status === 'RenewalInProgress' && (
             <button
               type="button"
-              onClick={() => handleCompleteRenewal(doc)}
+              onClick={() => openCompleteRenewalModal(doc)}
               disabled={actionLoadingId === doc.id}
-              className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
+              className="btn-primary !px-3 !py-1.5 !text-xs"
             >
               Completar renovacion
             </button>
@@ -581,7 +721,7 @@ export default function YachtDocumentsPage() {
               type="button"
               onClick={() => openReviewModal(doc.id, 'submit')}
               disabled={actionLoadingId === doc.id}
-              className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50"
+              className="btn-primary !px-3 !py-1.5 !text-xs"
             >
               Enviar
             </button>
@@ -592,7 +732,7 @@ export default function YachtDocumentsPage() {
                 type="button"
                 onClick={() => openReviewModal(doc.id, 'approve')}
                 disabled={actionLoadingId === doc.id}
-                className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
+                className="btn-primary !px-3 !py-1.5 !text-xs"
               >
                 Aprobar
               </button>
@@ -600,7 +740,7 @@ export default function YachtDocumentsPage() {
                 type="button"
                 onClick={() => openReviewModal(doc.id, 'reject')}
                 disabled={actionLoadingId === doc.id}
-                className="rounded border border-rose-300 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50"
+                className="btn-danger !px-3 !py-1.5 !text-xs"
               >
                 Rechazar
               </button>
@@ -608,18 +748,24 @@ export default function YachtDocumentsPage() {
           )}
           <button
             type="button"
-            onClick={() => handleArchive(doc)}
+            onClick={() => {
+              setArchiveTarget(doc);
+              setModalError(null);
+            }}
             disabled={actionLoadingId === doc.id}
-            className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+            className="btn-danger !px-3 !py-1.5 !text-xs"
           >
             Archivar
           </button>
           {canDelete && doc.workflowStatus !== 'approved' && doc.workflowStatus !== 'submitted' && (
             <button
               type="button"
-              onClick={() => handleDelete(doc)}
+              onClick={() => {
+                setDeleteTarget(doc);
+                setModalError(null);
+              }}
               disabled={actionLoadingId === doc.id}
-              className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+              className="btn-danger !px-3 !py-1.5 !text-xs"
             >
               Eliminar
             </button>
@@ -653,9 +799,10 @@ export default function YachtDocumentsPage() {
             type="button"
             onClick={() => {
               resetForm();
+              setModalError(null);
               setShowCreateModal(true);
             }}
-            className="rounded-lg bg-info px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="btn-primary"
           >
             Nuevo documento
           </button>
@@ -737,9 +884,10 @@ export default function YachtDocumentsPage() {
                 type="button"
                 onClick={() => {
                   resetForm();
+                  setModalError(null);
                   setShowCreateModal(true);
                 }}
-                className="mt-4 inline-flex items-center justify-center rounded-lg bg-info px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                className="btn-primary mt-4"
               >
                 Crear primer documento
               </button>
@@ -778,7 +926,7 @@ export default function YachtDocumentsPage() {
                 type="button"
                 onClick={() => void openDocumentDetail(doc.id)}
                 disabled={actionLoadingId === doc.id}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-primary hover:bg-surface-hover"
+                className="btn-secondary mt-3 w-full"
               >
                 Ver detalle y acciones
               </button>
@@ -838,46 +986,51 @@ export default function YachtDocumentsPage() {
 
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl rounded-xl bg-white p-5 shadow-xl">
-            <h2 className="text-lg font-semibold text-gray-900">Nuevo documento</h2>
+          <div className="w-full max-w-xl rounded-xl border border-border bg-surface p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">Nuevo documento</h2>
             <form className="mt-4 space-y-4" onSubmit={handleCreate}>
+              {modalError && (
+                <div className="rounded-lg border border-red-300 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
+                  {modalError}
+                </div>
+              )}
               <div>
-                <label className="mb-1 block text-sm text-gray-700">Titulo</label>
+                <label className="mb-1 block text-sm text-text-secondary">Titulo</label>
                 <input
                   required
                   minLength={3}
                   value={form.title}
                   onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="input"
                   placeholder="Ej: Certificado de navegabilidad"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm text-gray-700">Tipo documental</label>
+                <label className="mb-1 block text-sm text-text-secondary">Tipo documental</label>
                 <input
                   required
                   value={form.docType}
                   onChange={(event) => setForm((prev) => ({ ...prev, docType: event.target.value }))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="input"
                   placeholder="Ej: Registro de bandera"
                 />
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm text-gray-700">Subtipo</label>
+                  <label className="mb-1 block text-sm text-text-secondary">Subtipo</label>
                   <input
                     value={form.docSubType}
                     onChange={(event) => setForm((prev) => ({ ...prev, docSubType: event.target.value }))}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    className="input"
                     placeholder="Ej: Certificado anual"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm text-gray-700">Confidencialidad</label>
+                  <label className="mb-1 block text-sm text-text-secondary">Confidencialidad</label>
                   <select
                     value={form.confidentiality}
                     onChange={(event) => setForm((prev) => ({ ...prev, confidentiality: event.target.value as DocumentConfidentiality }))}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    className="input"
                   >
                     <option value="public">Publico</option>
                     <option value="crew_only">Solo tripulacion</option>
@@ -887,84 +1040,84 @@ export default function YachtDocumentsPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-sm text-gray-700">Tags (separados por coma)</label>
+                <label className="mb-1 block text-sm text-text-secondary">Tags (separados por coma)</label>
                 <input
                   value={form.tags}
                   onChange={(event) => setForm((prev) => ({ ...prev, tags: event.target.value }))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="input"
                   placeholder="certificados, puerto, legal"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm text-gray-700">Identificador</label>
+                <label className="mb-1 block text-sm text-text-secondary">Identificador</label>
                 <input
                   value={form.identifier}
                   onChange={(event) => setForm((prev) => ({ ...prev, identifier: event.target.value }))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="input"
                   placeholder="Ej: REG-2026-001"
                 />
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm text-gray-700">Fecha de emision</label>
+                  <label className="mb-1 block text-sm text-text-secondary">Fecha de emision</label>
                   <input
                     type="date"
                     value={form.issuedAt}
                     onChange={(event) => setForm((prev) => ({ ...prev, issuedAt: event.target.value }))}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    className="input"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm text-gray-700">Fecha de vencimiento</label>
+                  <label className="mb-1 block text-sm text-text-secondary">Fecha de vencimiento</label>
                   <input
                     type="date"
                     value={form.expiryDate}
                     onChange={(event) => setForm((prev) => ({ ...prev, expiryDate: event.target.value }))}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    className="input"
                   />
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-sm text-gray-700">Notas</label>
+                <label className="mb-1 block text-sm text-text-secondary">Notas</label>
                 <textarea
                   value={form.notes}
                   onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="input"
                   rows={3}
                 />
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="mb-2 text-sm font-medium text-slate-700">Version inicial (opcional)</p>
+              <div className="rounded-lg border border-border bg-surface-hover p-3">
+                <p className="mb-2 text-sm font-medium text-text-primary">Version inicial (opcional)</p>
                 <div>
-                  <label className="mb-1 block text-xs text-slate-600">Archivo</label>
+                  <label className="mb-1 block text-xs text-text-secondary">Archivo</label>
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png,.webp,.docx"
                     onChange={(event) => setCreateFile(event.target.files?.[0] || null)}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    className="input"
                   />
                 </div>
                 {createFile && (
-                  <p className="mt-2 text-xs text-slate-600">
+                  <p className="mt-2 text-xs text-text-secondary">
                     {createFile.name} - {(createFile.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
                 )}
                 {uploadProgress > 0 && (
-                  <p className="mt-2 text-xs text-blue-600">Subiendo archivo: {uploadProgress}%</p>
+                  <p className="mt-2 text-xs text-info">Subiendo archivo: {uploadProgress}%</p>
                 )}
               </div>
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="rounded-lg border px-3 py-2 text-sm text-gray-700"
+                  className="btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                  className="btn-primary"
                 >
                   {saving ? 'Guardando...' : 'Crear documento'}
                 </button>
@@ -976,33 +1129,38 @@ export default function YachtDocumentsPage() {
 
       {showVersionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
-            <h2 className="text-lg font-semibold text-gray-900">Subir nueva version</h2>
+          <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">Subir nueva version</h2>
             <form className="mt-4 space-y-4" onSubmit={submitVersion}>
+              {modalError && (
+                <div className="rounded-lg border border-red-300 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
+                  {modalError}
+                </div>
+              )}
               <div>
-                <label className="mb-1 block text-sm text-gray-700">Archivo</label>
+                <label className="mb-1 block text-sm text-text-secondary">Archivo</label>
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.webp,.docx"
                   required
                   onChange={(event) => setVersionFile(event.target.files?.[0] || null)}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="input"
                 />
               </div>
               {versionFile && (
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-text-secondary">
                   {versionFile.name} - {(versionFile.size / (1024 * 1024)).toFixed(2)} MB
                 </p>
               )}
               {uploadProgress > 0 && (
-                <p className="text-xs text-blue-600">Subiendo archivo: {uploadProgress}%</p>
+                <p className="text-xs text-info">Subiendo archivo: {uploadProgress}%</p>
               )}
               <div>
-                <label className="mb-1 block text-sm text-gray-700">Nota</label>
+                <label className="mb-1 block text-sm text-text-secondary">Nota</label>
                 <textarea
                   value={versionForm.note}
                   onChange={(event) => setVersionForm((prev) => ({ ...prev, note: event.target.value }))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="input"
                   rows={3}
                 />
               </div>
@@ -1010,14 +1168,14 @@ export default function YachtDocumentsPage() {
                 <button
                   type="button"
                   onClick={() => setShowVersionModal(false)}
-                  className="rounded-lg border px-3 py-2 text-sm text-gray-700"
+                  className="btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                  className="btn-primary"
                 >
                   {saving ? 'Guardando...' : 'Subir version'}
                 </button>
@@ -1029,8 +1187,8 @@ export default function YachtDocumentsPage() {
 
       {showReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
-            <h2 className="text-lg font-semibold text-gray-900">
+          <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">
               {reviewAction === 'submit'
                 ? 'Enviar documento'
                 : reviewAction === 'approve'
@@ -1038,14 +1196,19 @@ export default function YachtDocumentsPage() {
                   : 'Rechazar documento'}
             </h2>
             <form className="mt-4 space-y-4" onSubmit={submitReviewAction}>
+              {modalError && (
+                <div className="rounded-lg border border-red-300 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
+                  {modalError}
+                </div>
+              )}
               <div>
-                <label className="mb-1 block text-sm text-gray-700">Motivo</label>
+                <label className="mb-1 block text-sm text-text-secondary">Motivo</label>
                 <textarea
                   required
                   minLength={3}
                   value={reviewReason}
                   onChange={(event) => setReviewReason(event.target.value)}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="input"
                   rows={3}
                   placeholder="Detalle el motivo para auditoria"
                 />
@@ -1054,19 +1217,275 @@ export default function YachtDocumentsPage() {
                 <button
                   type="button"
                   onClick={() => setShowReviewModal(false)}
-                  className="rounded-lg border px-3 py-2 text-sm text-gray-700"
+                  className="btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                  className="btn-primary"
                 >
                   {saving ? 'Procesando...' : 'Confirmar'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-xl border border-border bg-surface p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">Editar documento</h2>
+            <p className="mt-1 text-sm text-text-secondary">Actualiza los datos clave y fechas del documento.</p>
+            <form className="mt-4 space-y-4" onSubmit={submitEditDocument}>
+              {modalError && (
+                <div className="rounded-lg border border-red-300 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
+                  {modalError}
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm text-text-secondary">Titulo</label>
+                  <input
+                    required
+                    minLength={3}
+                    value={editForm.title}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, title: event.target.value }))}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-text-secondary">Tipo documental</label>
+                  <input
+                    required
+                    value={editForm.docType}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, docType: event.target.value }))}
+                    className="input"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm text-text-secondary">Subtipo</label>
+                  <input
+                    value={editForm.docSubType}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, docSubType: event.target.value }))}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-text-secondary">Confidencialidad</label>
+                  <select
+                    value={editForm.confidentiality}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({ ...prev, confidentiality: event.target.value as DocumentConfidentiality }))
+                    }
+                    className="input"
+                  >
+                    <option value="public">Publico</option>
+                    <option value="crew_only">Solo tripulacion</option>
+                    <option value="management_only">Solo management</option>
+                    <option value="admin_only">Solo admin</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm text-text-secondary">Identificador</label>
+                  <input
+                    value={editForm.identifier}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, identifier: event.target.value }))}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-text-secondary">Tags (coma)</label>
+                  <input
+                    value={editForm.tags}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, tags: event.target.value }))}
+                    className="input"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm text-text-secondary">Fecha de emision</label>
+                  <input
+                    type="date"
+                    value={editForm.issuedAt}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, issuedAt: event.target.value }))}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-text-secondary">Fecha de vencimiento</label>
+                  <input
+                    type="date"
+                    value={editForm.expiryDate}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, expiryDate: event.target.value }))}
+                    className="input"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-text-secondary">Notas</label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(event) => setEditForm((prev) => ({ ...prev, notes: event.target.value }))}
+                  rows={3}
+                  className="input"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setShowEditModal(false)} className="btn-secondary">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={saving} className="btn-primary">
+                  {saving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEvidenceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-border bg-surface p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">Agregar evidencia</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Adjunta un archivo o pega un enlace para respaldar este documento.
+            </p>
+            <form className="mt-4 space-y-4" onSubmit={submitEvidence}>
+              {modalError && (
+                <div className="rounded-lg border border-red-300 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
+                  {modalError}
+                </div>
+              )}
+              <div className="rounded-lg border border-border bg-surface-hover p-3">
+                <label className="mb-1 block text-sm text-text-secondary">Archivo (opcional)</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.docx"
+                  onChange={(event) => setEvidenceFile(event.target.files?.[0] || null)}
+                  className="input"
+                />
+                {evidenceFile && (
+                  <p className="mt-2 text-xs text-text-secondary">
+                    {evidenceFile.name} - {(evidenceFile.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                )}
+                {uploadProgress > 0 && (
+                  <p className="mt-2 text-xs text-info">Subiendo archivo: {uploadProgress}%</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-text-secondary">Enlace de evidencia (opcional)</label>
+                <input
+                  type="url"
+                  value={evidenceForm.fileUrl}
+                  onChange={(event) => setEvidenceForm((prev) => ({ ...prev, fileUrl: event.target.value }))}
+                  className="input"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-text-secondary">Comentario</label>
+                <textarea
+                  rows={3}
+                  value={evidenceForm.comment}
+                  onChange={(event) => setEvidenceForm((prev) => ({ ...prev, comment: event.target.value }))}
+                  className="input"
+                  placeholder="Ej: Evidencia tomada durante inspeccion de puerto."
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setShowEvidenceModal(false)} className="btn-secondary">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={saving} className="btn-primary">
+                  {saving ? 'Guardando...' : 'Guardar evidencia'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showRenewalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">Completar renovacion</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Define la nueva fecha de vencimiento para cerrar la renovacion.
+            </p>
+            <form className="mt-4 space-y-4" onSubmit={submitCompleteRenewal}>
+              {modalError && (
+                <div className="rounded-lg border border-red-300 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
+                  {modalError}
+                </div>
+              )}
+              <div>
+                <label className="mb-1 block text-sm text-text-secondary">Nueva fecha de vencimiento</label>
+                <input
+                  type="date"
+                  required
+                  value={renewalForm.nextExpiry}
+                  onChange={(event) => setRenewalForm((prev) => ({ ...prev, nextExpiry: event.target.value }))}
+                  className="input"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setShowRenewalModal(false)} className="btn-secondary">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={saving} className="btn-primary">
+                  {saving ? 'Procesando...' : 'Completar renovacion'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {archiveTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">Archivar documento</h2>
+            <p className="mt-2 text-sm text-text-secondary">
+              Vas a archivar <span className="font-semibold text-text-primary">{archiveTarget.title || archiveTarget.docType}</span>.
+              Esta accion mantiene el historial pero lo saca del flujo activo.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setArchiveTarget(null)} className="btn-secondary">
+                Cancelar
+              </button>
+              <button type="button" onClick={confirmArchiveDocument} className="btn-danger">
+                Confirmar archivo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">Eliminar documento</h2>
+            <p className="mt-2 text-sm text-text-secondary">
+              Esta accion eliminara de forma permanente{' '}
+              <span className="font-semibold text-text-primary">{deleteTarget.title || deleteTarget.docType}</span> y no se puede deshacer.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setDeleteTarget(null)} className="btn-secondary">
+                Cancelar
+              </button>
+              <button type="button" onClick={confirmDeleteDocument} className="btn-danger">
+                Eliminar documento
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1092,14 +1511,23 @@ export default function YachtDocumentsPage() {
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+              {modalError && (
+                <div className="rounded-lg border border-red-300 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
+                  {modalError}
+                </div>
+              )}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="rounded-lg border border-border bg-background p-3">
                   <p className="text-xs text-text-secondary">Estado operativo</p>
-                  <div className="mt-1"><StatusBadge status={selectedDocument.status} /></div>
+                  <div className="mt-1">
+                    <StatusBadge status={selectedDocument.status} />
+                  </div>
                 </div>
                 <div className="rounded-lg border border-border bg-background p-3">
                   <p className="text-xs text-text-secondary">Flujo</p>
-                  <div className="mt-1"><WorkflowBadge workflowStatus={selectedDocument.workflowStatus} /></div>
+                  <div className="mt-1">
+                    <WorkflowBadge workflowStatus={selectedDocument.workflowStatus} />
+                  </div>
                 </div>
                 <div className="rounded-lg border border-border bg-background p-3">
                   <p className="text-xs text-text-secondary">Confidencialidad</p>
@@ -1109,12 +1537,61 @@ export default function YachtDocumentsPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <h3 className="text-sm font-semibold text-text-primary">Datos del documento</h3>
+                  <dl className="mt-3 space-y-2 text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <dt className="text-text-secondary">Identificador</dt>
+                      <dd className="text-right text-text-primary">{selectedDocument.identifier || '-'}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <dt className="text-text-secondary">Fecha emision</dt>
+                      <dd className="text-right text-text-primary">
+                        {selectedDocument.issuedAt ? new Date(selectedDocument.issuedAt).toLocaleDateString() : '-'}
+                      </dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <dt className="text-text-secondary">Fecha vencimiento</dt>
+                      <dd className="text-right text-text-primary">
+                        {selectedDocument.expiryDate ? new Date(selectedDocument.expiryDate).toLocaleDateString() : '-'}
+                      </dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <dt className="text-text-secondary">Version actual</dt>
+                      <dd className="text-right text-text-primary">v{selectedDocument.currentVersion?.versionNo || 0}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <dt className="text-text-secondary">Renovaciones</dt>
+                      <dd className="text-right text-text-primary">{selectedDocument.renewals.length}</dd>
+                    </div>
+                  </dl>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <h3 className="text-sm font-semibold text-text-primary">Notas y clasificacion</h3>
+                  <div className="mt-3 space-y-2 text-sm">
+                    <p className="text-text-secondary">
+                      <span className="font-semibold text-text-primary">Tipo:</span> {selectedDocument.docType}
+                      {selectedDocument.docSubType ? ` / ${selectedDocument.docSubType}` : ''}
+                    </p>
+                    <p className="text-text-secondary">
+                      <span className="font-semibold text-text-primary">Tags:</span>{' '}
+                      {selectedDocument.tags && selectedDocument.tags.length > 0 ? selectedDocument.tags.join(', ') : '-'}
+                    </p>
+                    <p className="text-text-secondary">
+                      <span className="font-semibold text-text-primary">Notas:</span>{' '}
+                      {selectedDocument.notes?.trim() ? selectedDocument.notes : 'Sin notas registradas.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-lg border border-border bg-background p-3">
                 <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Acciones disponibles</p>
                 <div className="mt-2">{renderDocumentActions(selectedDocument, true)}</div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="rounded-lg border border-border bg-background p-3">
                   <h3 className="text-sm font-semibold text-text-primary">Versiones</h3>
                   <ul className="mt-2 space-y-2 text-sm">
@@ -1147,21 +1624,43 @@ export default function YachtDocumentsPage() {
                 </div>
 
                 <div className="rounded-lg border border-border bg-background p-3">
-                  <h3 className="text-sm font-semibold text-text-primary">Auditoria</h3>
+                  <h3 className="text-sm font-semibold text-text-primary">Evidencias</h3>
                   <ul className="mt-2 space-y-2 text-sm">
-                    {(selectedDocument.auditTrail || []).length === 0 ? (
-                      <li className="text-text-secondary">Sin registros de auditoria</li>
+                    {selectedDocument.evidences.length === 0 ? (
+                      <li className="text-text-secondary">Sin evidencias registradas</li>
                     ) : (
-                      (selectedDocument.auditTrail || []).map((audit) => (
-                        <li key={audit.id} className="rounded border border-border bg-surface p-2">
-                          <p className="font-medium text-text-primary">{audit.action}</p>
-                          <p className="text-xs text-text-secondary">{AUDIT_ACTION_LABELS[audit.action] || audit.action}</p>
-                          <p className="text-xs text-text-secondary">{audit.actorName} - {new Date(audit.timestamp).toLocaleString()}</p>
+                      selectedDocument.evidences.map((evidence) => (
+                        <li key={evidence.id} className="rounded border border-border bg-surface p-2">
+                          <a className="font-medium text-info hover:underline" href={evidence.fileUrl} target="_blank" rel="noreferrer">
+                            Abrir evidencia
+                          </a>
+                          <p className="mt-1 text-xs text-text-secondary">
+                            Cargada por {evidence.uploadedBy} · {new Date(evidence.uploadedAt).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-text-secondary">{evidence.comment?.trim() || 'Sin comentario.'}</p>
                         </li>
                       ))
                     )}
                   </ul>
                 </div>
+              </div>
+
+              <div className="rounded-lg border border-border bg-background p-3">
+                <h3 className="text-sm font-semibold text-text-primary">Auditoria</h3>
+                <ul className="mt-2 space-y-2 text-sm">
+                  {(selectedDocument.auditTrail || []).length === 0 ? (
+                    <li className="text-text-secondary">Sin registros de auditoria</li>
+                  ) : (
+                    (selectedDocument.auditTrail || []).map((audit) => (
+                      <li key={audit.id} className="rounded border border-border bg-surface p-2">
+                        <p className="font-medium text-text-primary">{AUDIT_ACTION_LABELS[audit.action] || audit.action}</p>
+                        <p className="text-xs text-text-secondary">
+                          {audit.actorName} - {new Date(audit.timestamp).toLocaleString()}
+                        </p>
+                      </li>
+                    ))
+                  )}
+                </ul>
               </div>
             </div>
           </div>

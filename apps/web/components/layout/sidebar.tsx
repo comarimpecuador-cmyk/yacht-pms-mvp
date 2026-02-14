@@ -33,6 +33,12 @@ export function Sidebar({ onNavigate, showMobileHeader = false }: SidebarProps) 
   const settingsModules = [
     { label: translate('nav.settings'), href: '/settings' },
     { label: translate('notifications.title'), href: '/settings/notifications' },
+    ...(user && ['Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin'].includes(user.role)
+      ? [
+          { label: 'Reglas personalizadas', href: '/settings/notification-rules' },
+          { label: 'Trabajos programados', href: '/settings/jobs' },
+        ]
+      : []),
     ...(user?.role === 'SystemAdmin' ? [{ label: 'Usuarios', href: '/settings/users' }] : []),
   ];
 

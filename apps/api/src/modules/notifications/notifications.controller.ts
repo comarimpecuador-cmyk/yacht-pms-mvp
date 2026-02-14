@@ -130,13 +130,13 @@ export class NotificationsController {
   }
 
   @Get('rules')
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   listRules(@Query() query: ListNotificationRulesQueryDto) {
     return this.notificationRulesService.listRules(query);
   }
 
   @Post('rules')
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   createRule(
     @Req() req: { user: { userId: string } },
     @Body() body: CreateNotificationRuleDto,
@@ -145,13 +145,13 @@ export class NotificationsController {
   }
 
   @Patch('rules/:id')
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   updateRule(@Param('id') id: string, @Body() body: UpdateNotificationRuleDto) {
     return this.notificationRulesService.updateRule(id, body);
   }
 
   @Post('rules/:id/test')
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   testRule(@Param('id') id: string, @Body() body: TestNotificationRuleDto) {
     return this.notificationRulesService.testRule(id, body);
   }

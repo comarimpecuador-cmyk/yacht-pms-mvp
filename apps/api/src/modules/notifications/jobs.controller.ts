@@ -11,25 +11,25 @@ export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
   @Get()
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   list(@Query() query: ListJobsQueryDto) {
     return this.jobsService.listJobs(query);
   }
 
   @Post()
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   create(@Req() req: { user: { userId: string } }, @Body() body: CreateJobDto) {
     return this.jobsService.createJob(req.user.userId, body);
   }
 
   @Patch(':id')
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   update(@Param('id') id: string, @Body() body: UpdateJobDto) {
     return this.jobsService.updateJob(id, body);
   }
 
   @Post(':id/run-now')
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   runNow(
     @Param('id') id: string,
     @Req() req: { user: { userId: string } },
@@ -39,7 +39,7 @@ export class JobsController {
   }
 
   @Get(':id/runs')
-  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin')
+  @Roles('Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin')
   listRuns(@Param('id') id: string, @Query('limit') limit?: string) {
     return this.jobsService.listRuns(id, Number(limit || 20));
   }

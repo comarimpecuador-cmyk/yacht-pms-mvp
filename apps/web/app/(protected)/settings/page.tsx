@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 export default function SettingsPage() {
   const { user } = useAuth();
   const isSystemAdmin = user?.role === 'SystemAdmin';
+  const canManageAutomation = !!user && ['Captain', 'Chief Engineer', 'Management/Office', 'Admin', 'SystemAdmin'].includes(user.role);
 
   return (
     <section className="space-y-4">
@@ -38,6 +39,30 @@ export default function SettingsPage() {
               : 'Vista de usuarios y accesos por yate.'}
           </p>
         </Link>
+
+        {canManageAutomation && (
+          <>
+            <Link
+              href="/settings/notification-rules"
+              className="rounded-xl border border-border bg-surface p-4 transition-colors hover:bg-surface-hover"
+            >
+              <p className="text-base font-medium text-text-primary">Reglas personalizadas</p>
+              <p className="mt-1 text-sm text-text-secondary">
+                Define eventos, destinatarios y canales de alertas preventivas por modulo.
+              </p>
+            </Link>
+
+            <Link
+              href="/settings/jobs"
+              className="rounded-xl border border-border bg-surface p-4 transition-colors hover:bg-surface-hover"
+            >
+              <p className="text-base font-medium text-text-primary">Trabajos programados</p>
+              <p className="mt-1 text-sm text-text-secondary">
+                Crea tareas recurrentes y recordatorios (dias/horas antes) con asignacion automatica.
+              </p>
+            </Link>
+          </>
+        )}
       </div>
     </section>
   );
