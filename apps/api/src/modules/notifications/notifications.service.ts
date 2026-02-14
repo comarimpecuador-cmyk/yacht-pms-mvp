@@ -1754,8 +1754,8 @@ export class NotificationsService {
       .map(
         (item) => `
           <tr>
-            <td style="padding:6px 0;color:#94a3b8;font-size:13px;">${this.escapeHtml(item.label)}</td>
-            <td style="padding:6px 0;color:#e2e8f0;font-size:13px;text-align:right;">${this.escapeHtml(item.value)}</td>
+            <td class="pms-grid-label" style="padding:6px 0;color:#94a3b8;font-size:13px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;">${this.escapeHtml(item.label)}</td>
+            <td class="pms-grid-value" style="padding:6px 0;color:#e2e8f0;font-size:13px;text-align:right;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;">${this.escapeHtml(item.value)}</td>
           </tr>
         `,
       )
@@ -1776,8 +1776,8 @@ export class NotificationsService {
     const responsibleHtml = input.responsible
       ? `
           <tr>
-            <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Responsable</td>
-            <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">
+            <td class="pms-grid-label" style="color:#94a3b8;font-size:12px;padding-top:6px;vertical-align:top;">Responsable</td>
+            <td class="pms-grid-value" style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;">
               ${this.escapeHtml(input.responsible.fullName)} - ${this.escapeHtml(input.responsible.role)}
             </td>
           </tr>
@@ -1785,8 +1785,8 @@ export class NotificationsService {
             input.responsible.email
               ? `
           <tr>
-            <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Correo responsable</td>
-            <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">
+            <td class="pms-grid-label" style="color:#94a3b8;font-size:12px;padding-top:6px;vertical-align:top;">Correo responsable</td>
+            <td class="pms-grid-value" style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;">
               ${this.escapeHtml(input.responsible.email)}
             </td>
           </tr>
@@ -1797,36 +1797,46 @@ export class NotificationsService {
       : '';
 
     return `
-      <div style="margin:0;padding:24px;background:#020617;font-family:Inter,Segoe UI,Arial,sans-serif;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#0b1220;border:1px solid #1e293b;border-radius:14px;overflow:hidden;">
+      <style>
+        @media only screen and (max-width: 640px) {
+          .pms-wrapper { padding: 12px !important; }
+          .pms-card { border-radius: 12px !important; }
+          .pms-cell { padding: 16px !important; }
+          .pms-title { font-size: 20px !important; line-height: 1.25 !important; }
+          .pms-btn { display: block !important; width: 100% !important; text-align: center !important; box-sizing: border-box !important; }
+          .pms-grid-label, .pms-grid-value { display: block !important; width: 100% !important; text-align: left !important; padding-top: 4px !important; }
+        }
+      </style>
+      <div class="pms-wrapper" style="margin:0;padding:24px;background:#020617;font-family:Inter,Segoe UI,Arial,sans-serif;">
+        <table class="pms-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:640px;margin:0 auto;background:#0b1220;border:1px solid #1e293b;border-radius:14px;overflow:hidden;">
           <tr>
-            <td style="padding:20px 24px;border-bottom:1px solid #1e293b;">
+            <td class="pms-cell" style="padding:20px 24px;border-bottom:1px solid #1e293b;">
               <div style="font-size:20px;color:#f8fafc;font-weight:700;">Yacht PMS</div>
               <div style="font-size:12px;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;">Notificacion operativa</div>
             </td>
           </tr>
           <tr>
-            <td style="padding:20px 24px;">
+            <td class="pms-cell" style="padding:20px 24px;">
               <div style="display:inline-block;background:${severityColor};color:#0b1220;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:uppercase;">
                 ${this.escapeHtml(severityLabel)}
               </div>
-              <h1 style="margin:14px 0 6px 0;color:#f8fafc;font-size:22px;line-height:1.3;">${this.escapeHtml(input.details.title)}</h1>
-              <p style="margin:0 0 16px 0;color:#cbd5e1;font-size:14px;line-height:1.6;">
+              <h1 class="pms-title" style="margin:14px 0 6px 0;color:#f8fafc;font-size:22px;line-height:1.3;word-break:break-word;overflow-wrap:anywhere;">${this.escapeHtml(input.details.title)}</h1>
+              <p style="margin:0 0 16px 0;color:#cbd5e1;font-size:14px;line-height:1.6;word-break:break-word;overflow-wrap:anywhere;">
                 ${this.escapeHtml(input.recipientName ? `Hola ${input.recipientName}, ` : '')}${this.escapeHtml(input.details.message)}
               </p>
 
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;table-layout:fixed;background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">
                 <tr>
-                  <td style="color:#94a3b8;font-size:12px;">Yate</td>
-                  <td style="color:#f8fafc;font-size:12px;text-align:right;">${this.escapeHtml(input.yachtName)} (${this.escapeHtml(input.yachtFlag)})</td>
+                  <td class="pms-grid-label" style="color:#94a3b8;font-size:12px;vertical-align:top;">Yate</td>
+                  <td class="pms-grid-value" style="color:#f8fafc;font-size:12px;text-align:right;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;">${this.escapeHtml(input.yachtName)} (${this.escapeHtml(input.yachtFlag)})</td>
                 </tr>
                 <tr>
-                  <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Modulo</td>
-                  <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">${this.escapeHtml(input.details.moduleLabel)}</td>
+                  <td class="pms-grid-label" style="color:#94a3b8;font-size:12px;padding-top:6px;vertical-align:top;">Modulo</td>
+                  <td class="pms-grid-value" style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;">${this.escapeHtml(input.details.moduleLabel)}</td>
                 </tr>
                 <tr>
-                  <td style="color:#94a3b8;font-size:12px;padding-top:6px;">Recordatorio</td>
-                  <td style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;">${this.escapeHtml(input.details.dueText)}</td>
+                  <td class="pms-grid-label" style="color:#94a3b8;font-size:12px;padding-top:6px;vertical-align:top;">Recordatorio</td>
+                  <td class="pms-grid-value" style="color:#f8fafc;font-size:12px;text-align:right;padding-top:6px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;">${this.escapeHtml(input.details.dueText)}</td>
                 </tr>
                 ${responsibleHtml}
                 ${highlightsHtml}
@@ -1840,14 +1850,14 @@ export class NotificationsService {
               </table>
 
               <div style="margin-top:18px;">
-                <a href="${this.escapeHtml(input.details.actionUrl)}" style="display:inline-block;background:#1d4ed8;color:#eff6ff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 14px;border-radius:8px;">
+                <a class="pms-btn" href="${this.escapeHtml(input.details.actionUrl)}" style="display:inline-block;background:#1d4ed8;color:#eff6ff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 14px;border-radius:8px;word-break:break-word;">
                   ${this.escapeHtml(input.details.actionLabel)}
                 </a>
               </div>
             </td>
           </tr>
           <tr>
-            <td style="padding:14px 24px;border-top:1px solid #1e293b;color:#64748b;font-size:12px;">
+            <td class="pms-cell" style="padding:14px 24px;border-top:1px solid #1e293b;color:#64748b;font-size:12px;word-break:break-word;overflow-wrap:anywhere;">
               Mensaje generado automaticamente por Yacht PMS.
             </td>
           </tr>
