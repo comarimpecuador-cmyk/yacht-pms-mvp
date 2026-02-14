@@ -56,7 +56,7 @@ export function AddYachtModal({ onClose, onSuccess }: AddYachtModalProps) {
           <h2 className="text-lg font-semibold text-text-primary">{translate('yacht.addYacht')}</h2>
           <button
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
             type="button"
           >
             x

@@ -135,16 +135,20 @@
     @apply border-accent/80 bg-accent text-white shadow-[inset_4px_0_0_0_rgba(255,255,255,0.95),0_8px_24px_rgba(15,76,129,0.45)];
   }
 
-  button.btn-primary {
+  .btn-primary {
     @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  button.btn-secondary {
+  .btn-secondary {
     @apply inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  button.btn-ghost {
+  .btn-ghost {
     @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 }
 
@@ -162,55 +166,55 @@
     display: none;
   }
 
-  button:not([class*='bg-']):not([class*='border-']):not([class*='btn-']) {
+  button:not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']):not([class~='border']):not([class^='border-']):not([class*=' border-']) {
     background-color: rgb(var(--color-surface-hover));
     color: rgb(var(--color-text-primary));
     border: 1px solid rgb(var(--color-border));
   }
 
-  button[class*='border-']:not([class*='bg-']):not([class*='btn-']) {
+  button:is([class~='border'], [class^='border-'], [class*=' border-']):not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']) {
     background-color: rgb(var(--color-surface-hover));
     color: rgb(var(--color-text-primary));
   }
 
-  button[class*='text-white']:not([class*='bg-']):not([class*='btn-']) {
+  button:is([class^='text-white'], [class*=' text-white']):not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']) {
     background-color: #0f4c81;
     border-color: #0f4c81;
     color: #ffffff;
   }
 
-  .dark button:not([class*='bg-']):not([class*='border-']):not([class*='btn-']) {
+  .dark button:not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']):not([class~='border']):not([class^='border-']):not([class*=' border-']) {
     background-color: rgba(15, 76, 129, 0.18);
     border-color: rgba(15, 76, 129, 0.55);
     color: rgb(var(--color-text-primary));
   }
 
-  .dark button[class*='border-']:not([class*='bg-']):not([class*='btn-']) {
+  .dark button:is([class~='border'], [class^='border-'], [class*=' border-']):not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']) {
     background-color: rgba(15, 76, 129, 0.18);
     border-color: rgba(15, 76, 129, 0.55);
     color: rgb(var(--color-text-primary));
   }
 
-  .dark button[class*='text-white']:not([class*='bg-']):not([class*='btn-']) {
+  .dark button:is([class^='text-white'], [class*=' text-white']):not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']) {
     background-color: #0f4c81;
     border-color: #0f4c81;
     color: #ffffff;
   }
 
-  button:not([class*='bg-']):not([class*='border-']):not([class*='btn-']):hover {
+  button:not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']):not([class~='border']):not([class^='border-']):not([class*=' border-']):hover {
     background-color: rgb(var(--color-surface-hover));
   }
 
-  .dark button:not([class*='bg-']):not([class*='border-']):not([class*='btn-']):hover {
+  .dark button:not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']):not([class~='border']):not([class^='border-']):not([class*=' border-']):hover {
     background-color: rgba(15, 76, 129, 0.3);
   }
 
-  button[class*='text-white']:not([class*='bg-']):not([class*='btn-']):hover {
+  button:is([class^='text-white'], [class*=' text-white']):not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']):hover {
     background-color: #0c3d67;
     border-color: #0c3d67;
   }
 
-  button:not([class*='bg-']):not([class*='border-']):not([class*='btn-']):not([class*='px-']):not([class*='py-']):not([class*='p-']) {
+  button:not([class^='btn-']):not([class*=' btn-']):not([class^='bg-']):not([class*=' bg-']):not([class~='border']):not([class^='border-']):not([class*=' border-']):not([class*='px-']):not([class*='py-']):not([class*='p-']) {
     padding: 0.5rem 0.75rem;
   }
 

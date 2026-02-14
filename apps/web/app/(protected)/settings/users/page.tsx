@@ -457,7 +457,7 @@ export default function UsersSettingsPage() {
               <h2 className="text-lg font-semibold text-text-primary">Crear usuario</h2>
               <button
                 type="button"
-                className="text-sm text-text-secondary hover:text-text-primary"
+                className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary transition-colors hover:bg-surface-hover"
                 onClick={() => setShowCreate(false)}
               >
                 Cerrar

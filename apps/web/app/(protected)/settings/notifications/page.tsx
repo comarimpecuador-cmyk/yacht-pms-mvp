@@ -45,6 +45,27 @@ interface ScenarioDispatchResponse {
   }>;
 }
 
+interface EmailLogEntry {
+  id: string;
+  type: string;
+  status: string;
+  statusLabel?: string;
+  createdAt: string;
+  sentAt?: string | null;
+  error?: string | null;
+  yacht?: { id: string; name: string; flag?: string | null } | null;
+  recipient: { email?: string | null; name?: string | null };
+  subject?: string | null;
+  message?: string | null;
+  moduleLabel?: string | null;
+  dueText?: string | null;
+  responsible?: { name?: string | null; email?: string | null; role?: string | null } | null;
+  highlights?: string[];
+  content?: { html?: string | null; text?: string | null; preview?: string | null } | null;
+}
+
+type NotificationTab = 'preferences' | 'emailCenter' | 'emailLogs';
+
 const SCENARIO_OPTIONS: Array<{ key: ScenarioKey; label: string; description: string }> = [
   {
     key: 'inventory_low_stock',
@@ -130,6 +151,14 @@ const DEFAULT_SETTINGS: NotificationSettingsPayload = {
   yachtsScope: [],
 };
 
+function emailStatusBadgeClass(status: string) {
+  if (status === 'sent') return 'border-emerald-300 bg-emerald-50 text-emerald-700';
+  if (status === 'failed') return 'border-red-300 bg-red-50 text-red-700';
+  if (status === 'skipped') return 'border-amber-300 bg-amber-50 text-amber-700';
+  if (status === 'read') return 'border-slate-300 bg-slate-50 text-slate-700';
+  return 'border-slate-300 bg-slate-50 text-slate-700';
+}
+
 export default function NotificationSettingsPage() {
   const { user } = useAuth();
   const { yachts, loadYachts } = useYacht();
@@ -158,6 +187,14 @@ export default function NotificationSettingsPage() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailMessage, setEmailMessage] = useState<string | null>(null);
   const [dispatchResult, setDispatchResult] = useState<ScenarioDispatchResponse | null>(null);
+  const [activeTab, setActiveTab] = useState<NotificationTab>('preferences');
+  const [emailLogs, setEmailLogs] = useState<EmailLogEntry[]>([]);
+  const [loadingEmailLogs, setLoadingEmailLogs] = useState(false);
+  const [emailLogsError, setEmailLogsError] = useState<string | null>(null);
+  const [logsStatusFilter, setLogsStatusFilter] = useState('');
+  const [logsRecipientFilter, setLogsRecipientFilter] = useState('');
+  const [logsYachtFilter, setLogsYachtFilter] = useState('');
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   useEffect(() => {
     loadYachts().catch(() => {});
@@ -259,6 +296,36 @@ export default function NotificationSettingsPage() {
     }
   };
 
+  const loadEmailLogs = async (override?: { status?: string; recipient?: string; yachtId?: string }) => {
+    setLoadingEmailLogs(true);
+    setEmailLogsError(null);
+
+    const statusValue = override?.status ?? logsStatusFilter;
+    const recipientValue = override?.recipient ?? logsRecipientFilter;
+    const yachtValue = override?.yachtId ?? logsYachtFilter;
+    const params = new URLSearchParams({ limit: '80' });
+
+    if (statusValue.trim()) params.set('status', statusValue.trim());
+    if (recipientValue.trim()) params.set('recipient', recipientValue.trim());
+    if (yachtValue.trim()) params.set('yachtId', yachtValue.trim());
+
+    try {
+      const query = params.toString();
+      const response = await api.get<EmailLogEntry[]>(`/notifications/email/logs${query ? `?${query}` : ''}`);
+      setEmailLogs(Array.isArray(response) ? response : []);
+    } catch (err) {
+      setEmailLogs([]);
+      setEmailLogsError(toFriendlyError(err, 'No se pudo cargar el historial de correos'));
+    } finally {
+      setLoadingEmailLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user || activeTab !== 'emailLogs') return;
+    loadEmailLogs().catch(() => {});
+  }, [user, activeTab]);
+
   const sendScenarioEmail = async () => {
     setEmailError(null);
     setEmailMessage(null);
@@ -304,6 +371,7 @@ export default function NotificationSettingsPage() {
       setEmailMessage(
         `Envio finalizado: ${response.sent} enviados, ${response.failed} fallidos, ${response.skipped} omitidos.`,
       );
+      loadEmailLogs().catch(() => {});
     } catch (err) {
       setEmailError(toFriendlyError(err, 'No se pudo enviar el correo'));
     } finally {
@@ -335,6 +403,31 @@ export default function NotificationSettingsPage() {
         </div>
       )}
 
+      <div className="inline-flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-white p-1 dark:border-border dark:bg-surface">
+        <button
+          type="button"
+          className={activeTab === 'preferences' ? 'btn-primary' : 'btn-secondary'}
+          onClick={() => setActiveTab('preferences')}
+        >
+          Canales y preferencias
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'emailCenter' ? 'btn-primary' : 'btn-secondary'}
+          onClick={() => setActiveTab('emailCenter')}
+        >
+          Centro de envios
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'emailLogs' ? 'btn-primary' : 'btn-secondary'}
+          onClick={() => setActiveTab('emailLogs')}
+        >
+          Log de correos
+        </button>
+      </div>
+
+      {activeTab === 'preferences' && (
       <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-border dark:bg-surface">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-text-primary">Canales y preferencias</h2>
 
@@ -430,7 +523,9 @@ export default function NotificationSettingsPage() {
           </button>
         </div>
       </div>
+      )}
 
+      {activeTab === 'emailCenter' && (
       <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-border dark:bg-surface">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-text-primary">Centro de envios por correo</h2>
         <p className="text-sm text-slate-500">
@@ -563,6 +658,197 @@ export default function NotificationSettingsPage() {
           </div>
         )}
       </div>
+      )}
+
+      {activeTab === 'emailLogs' && (
+      <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-border dark:bg-surface">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-text-primary">Log de correos enviados</h2>
+            <p className="text-sm text-slate-500">
+              Historial de correos, destinatarios y contenido generado por el sistema.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => loadEmailLogs().catch(() => {})}
+            disabled={loadingEmailLogs}
+          >
+            {loadingEmailLogs ? 'Actualizando...' : 'Actualizar'}
+          </button>
+        </div>
+
+        {emailLogsError && (
+          <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+            {emailLogsError}
+          </div>
+        )}
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <div>
+            <label className="mb-1 block text-sm text-slate-600 dark:text-text-secondary">Yate</label>
+            <select
+              value={logsYachtFilter}
+              onChange={(event) => setLogsYachtFilter(event.target.value)}
+              className="w-full rounded border border-slate-300 bg-white p-2 text-sm text-slate-900 dark:border-border dark:bg-background dark:text-text-primary"
+            >
+              <option value="">Todos</option>
+              {yachts.map((yacht) => (
+                <option key={yacht.id} value={yacht.id}>
+                  {yacht.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600 dark:text-text-secondary">Estado</label>
+            <select
+              value={logsStatusFilter}
+              onChange={(event) => setLogsStatusFilter(event.target.value)}
+              className="w-full rounded border border-slate-300 bg-white p-2 text-sm text-slate-900 dark:border-border dark:bg-background dark:text-text-primary"
+            >
+              <option value="">Todos</option>
+              <option value="sent">Enviado</option>
+              <option value="failed">Fallido</option>
+              <option value="skipped">Omitido</option>
+              <option value="read">Leido</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm text-slate-600 dark:text-text-secondary">Destinatario</label>
+            <input
+              value={logsRecipientFilter}
+              onChange={(event) => setLogsRecipientFilter(event.target.value)}
+              placeholder="correo o nombre"
+              className="w-full rounded border border-slate-300 bg-white p-2 text-sm text-slate-900 dark:border-border dark:bg-background dark:text-text-primary"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => loadEmailLogs().catch(() => {})}
+            disabled={loadingEmailLogs}
+          >
+            Aplicar filtros
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => {
+              setLogsStatusFilter('');
+              setLogsRecipientFilter('');
+              setLogsYachtFilter('');
+              setExpandedLogId(null);
+              loadEmailLogs({ status: '', recipient: '', yachtId: '' }).catch(() => {});
+            }}
+            disabled={loadingEmailLogs}
+          >
+            Limpiar
+          </button>
+        </div>
+
+        {loadingEmailLogs ? (
+          <div className="rounded border border-slate-200 p-3 text-sm text-slate-500">
+            Cargando historial de correos...
+          </div>
+        ) : emailLogs.length === 0 ? (
+          <div className="rounded border border-slate-200 p-3 text-sm text-slate-500">
+            No hay correos que coincidan con los filtros.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {emailLogs.map((log) => {
+              const expanded = expandedLogId === log.id;
+              return (
+                <article key={log.id} className="rounded-lg border border-slate-200 p-3 dark:border-border">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-text-primary">
+                        {log.subject || log.type}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">
+                        {log.recipient.email || 'Sin destinatario'}{log.recipient.name ? ` (${log.recipient.name})` : ''}
+                      </p>
+                    </div>
+                    <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${emailStatusBadgeClass(log.status)}`}>
+                      {log.statusLabel || log.status}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 grid gap-1 text-xs text-slate-600 md:grid-cols-2">
+                    <p>Creado: {new Date(log.createdAt).toLocaleString()}</p>
+                    <p>Enviado: {log.sentAt ? new Date(log.sentAt).toLocaleString() : 'No enviado'}</p>
+                    <p>Yate: {log.yacht?.name || 'N/A'}</p>
+                    <p>Modulo: {log.moduleLabel || 'N/A'}</p>
+                  </div>
+
+                  {log.content?.preview && (
+                    <p className="mt-2 text-sm text-slate-700 dark:text-text-secondary">
+                      {log.content.preview}
+                    </p>
+                  )}
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setExpandedLogId(expanded ? null : log.id)}
+                    >
+                      {expanded ? 'Ocultar contenido' : 'Ver contenido'}
+                    </button>
+                  </div>
+
+                  {expanded && (
+                    <div className="mt-3 space-y-2 rounded border border-slate-200 bg-slate-50 p-3 text-xs dark:border-border dark:bg-background/50">
+                      {log.message && (
+                        <p>
+                          <span className="font-semibold text-slate-800 dark:text-text-primary">Mensaje:</span> {log.message}
+                        </p>
+                      )}
+                      {log.dueText && (
+                        <p>
+                          <span className="font-semibold text-slate-800 dark:text-text-primary">Tiempo:</span> {log.dueText}
+                        </p>
+                      )}
+                      {(log.responsible?.name || log.responsible?.email) && (
+                        <p>
+                          <span className="font-semibold text-slate-800 dark:text-text-primary">Responsable:</span>{' '}
+                          {[log.responsible?.name, log.responsible?.role, log.responsible?.email].filter(Boolean).join(' | ')}
+                        </p>
+                      )}
+                      {log.highlights && log.highlights.length > 0 && (
+                        <ul className="list-disc pl-5 text-slate-700 dark:text-text-secondary">
+                          {log.highlights.map((item, index) => (
+                            <li key={`${log.id}-highlight-${index}`}>{item}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {log.error && (
+                        <p className="text-red-600">Error: {log.error}</p>
+                      )}
+                      {log.content?.html && (
+                        <details>
+                          <summary className="cursor-pointer font-semibold text-slate-800 dark:text-text-primary">HTML completo</summary>
+                          <pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap break-words rounded border border-slate-200 bg-white p-2 text-[11px] text-slate-700 dark:border-border dark:bg-surface dark:text-text-secondary">
+                            {log.content.html}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      )}
     </section>
   );
 }

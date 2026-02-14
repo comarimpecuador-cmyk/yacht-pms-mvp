@@ -546,6 +546,118 @@ export class NotificationsService {
     return Array.from(unique.values()).sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 
+  async listEmailLogs(input?: {
+    limit?: number;
+    status?: string;
+    yachtId?: string;
+    recipient?: string;
+  }) {
+    const safeLimit = Number.isFinite(input?.limit)
+      ? Math.min(Math.max(Number(input?.limit), 1), 200)
+      : 40;
+
+    const normalizedStatus = input?.status?.trim().toLowerCase();
+    const allowedStatuses = new Set(['sent', 'failed', 'skipped', 'read']);
+    if (normalizedStatus && !allowedStatuses.has(normalizedStatus)) {
+      throw new BadRequestException('Estado de correo invalido');
+    }
+
+    const recipientFilter = input?.recipient?.trim().toLowerCase() ?? '';
+
+    const rows = await this.prisma.notificationEvent.findMany({
+      where: {
+        channel: 'email',
+        ...(normalizedStatus ? { status: normalizedStatus } : {}),
+        ...(input?.yachtId ? { yachtId: input.yachtId } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Math.max(safeLimit * 4, safeLimit), 500),
+      include: {
+        yacht: {
+          select: { id: true, name: true, flag: true },
+        },
+        user: {
+          select: { id: true, fullName: true, email: true },
+        },
+      },
+    });
+
+    const mapped = rows.map((row) => {
+      const payload = this.asRecord(row.payload);
+      const highlightsValue = payload.highlights;
+      const highlights = Array.isArray(highlightsValue)
+        ? highlightsValue
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .slice(0, 15)
+        : [];
+
+      const recipientEmail =
+        this.pickText(payload, ['destinationEmail', 'toEmail', 'recipientEmail', 'email']) ??
+        row.user?.email ??
+        null;
+      const recipientName =
+        this.pickText(payload, ['destinationName', 'toName', 'recipientName']) ??
+        row.user?.fullName ??
+        null;
+      const subject = this.pickText(payload, ['subject', 'title']) ?? null;
+      const message = this.pickText(payload, ['message', 'description', 'detail']) ?? null;
+      const moduleLabel = this.pickText(payload, ['module']) ?? this.resolveModuleLabelFromType(row.type);
+      const dueText = this.pickText(payload, ['dueText']) ?? null;
+      const responsibleName = this.pickText(payload, ['responsibleName']) ?? null;
+      const responsibleEmail = this.pickText(payload, ['responsibleEmail']) ?? null;
+      const responsibleRole = this.pickText(payload, ['responsibleRole']) ?? null;
+      const htmlContent = this.pickText(payload, ['htmlContent', 'html']) ?? null;
+      const plainContent = this.pickText(payload, ['content', 'text']) ?? null;
+
+      return {
+        id: row.id,
+        channel: row.channel,
+        type: row.type,
+        status: row.status,
+        statusLabel: this.mapEmailStatusLabel(row.status),
+        createdAt: row.createdAt,
+        sentAt: row.sentAt,
+        error: row.error,
+        yacht: row.yacht
+          ? {
+              id: row.yacht.id,
+              name: row.yacht.name,
+              flag: row.yacht.flag,
+            }
+          : null,
+        recipient: {
+          email: recipientEmail,
+          name: recipientName,
+        },
+        subject,
+        message,
+        moduleLabel,
+        dueText,
+        responsible: {
+          name: responsibleName,
+          email: responsibleEmail,
+          role: responsibleRole,
+        },
+        highlights,
+        content: {
+          html: htmlContent,
+          text: plainContent,
+          preview: this.buildEmailContentPreview(message, htmlContent, plainContent),
+        },
+      };
+    });
+
+    const filtered = recipientFilter
+      ? mapped.filter((item) => {
+          const email = item.recipient.email?.toLowerCase() ?? '';
+          const name = item.recipient.name?.toLowerCase() ?? '';
+          return email.includes(recipientFilter) || name.includes(recipientFilter);
+        })
+      : mapped;
+
+    return filtered.slice(0, safeLimit);
+  }
+
   async listInApp(userId: string) {
     const rows = await this.prisma.notificationEvent.findMany({
       where: { userId, channel: 'in_app' },
@@ -1203,6 +1315,44 @@ export class NotificationsService {
     if (status === 'closed') return 'Cerrado';
     if (status === 'cancelled') return 'Cancelado';
     return null;
+  }
+
+  private mapEmailStatusLabel(status: string): string {
+    if (status === 'sent') return 'Enviado';
+    if (status === 'failed') return 'Fallido';
+    if (status === 'skipped') return 'Omitido';
+    if (status === 'read') return 'Leido';
+    return status;
+  }
+
+  private resolveModuleLabelFromType(type: string): string | null {
+    if (type.startsWith('inventory.')) return 'Inventario';
+    if (type.startsWith('maintenance.')) return 'Mantenimiento';
+    if (type.startsWith('documents.')) return 'Documentos';
+    if (type.startsWith('po.')) return 'Ordenes de compra';
+    if (type.startsWith('logbook.')) return 'Bitacora';
+    if (type.startsWith('logbook_v2.')) return 'Bitacora';
+    if (type.startsWith('hrm.')) return 'RRHH';
+    return null;
+  }
+
+  private buildEmailContentPreview(
+    message: string | null,
+    htmlContent: string | null,
+    plainContent: string | null,
+  ): string | null {
+    if (message) return message;
+    if (plainContent) return plainContent.slice(0, 600);
+    if (!htmlContent) return null;
+
+    const withoutTags = htmlContent
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return withoutTags ? withoutTags.slice(0, 600) : null;
   }
 
   private normalizeScenarioRecipients(

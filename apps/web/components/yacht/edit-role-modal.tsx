@@ -55,7 +55,7 @@ export function EditRoleModal({ yachtId, member, onClose, onSuccess }: EditRoleM
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 dark:border-gray-600 dark:bg-gray-700/70 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -103,7 +103,7 @@ export function EditRoleModal({ yachtId, member, onClose, onSuccess }: EditRoleM
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 sm:w-auto"
               disabled={isLoading}
             >
               {translate('common.cancel')}

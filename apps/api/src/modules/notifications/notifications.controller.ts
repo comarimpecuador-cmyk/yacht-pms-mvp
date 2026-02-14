@@ -179,6 +179,22 @@ export class NotificationsController {
     return this.notificationsService.listEmailRecipients(yachtId);
   }
 
+  @Get('email/logs')
+  @Roles('Management/Office', 'Admin')
+  listEmailLogs(
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('yachtId') yachtId?: string,
+    @Query('recipient') recipient?: string,
+  ) {
+    return this.notificationsService.listEmailLogs({
+      limit: Number(limit || 40),
+      status,
+      yachtId,
+      recipient,
+    });
+  }
+
   @Post('test/email-scenarios')
   @Roles('Management/Office', 'Admin')
   sendEmailScenariosLegacy(@Body() body: SendTestEmailsDto) {
