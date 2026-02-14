@@ -44,6 +44,7 @@ type EmailScenarioDetails = {
   actionLabel: string;
   actionUrl: string;
   dueText: string;
+  nextSteps: string[];
   highlights: Array<{ label: string; value: string }>;
 };
 
@@ -400,6 +401,7 @@ export class NotificationsService {
           responsibleRole: responsible?.role ?? null,
           destinationEmail: recipient.email,
           destinationName: recipient.name ?? null,
+          nextSteps: details.nextSteps,
           highlights: details.highlights.map((item) => `${item.label}: ${item.value}`),
         };
 
@@ -1402,53 +1404,81 @@ export class NotificationsService {
       yachtId ? `/yachts/${yachtId}/${section}` : '/dashboard';
 
     if (scenario === 'inventory_low_stock') {
+      const productName = 'Filtro de aceite principal';
+      const currentUnits = 2;
+      const minUnits = 5;
+      const suggestedOrderQty = 12;
+
       return {
         moduleLabel: 'Inventario',
         type: 'inventory.low_stock',
         severity: 'warn',
         title: `Stock bajo detectado en ${yachtName}`,
-        message: 'El repuesto "Filtro de aceite principal" bajo a 2 unidades y quedo bajo el minimo permitido.',
+        message: `El producto "${productName}" tiene ${currentUnits} unidades disponibles (minimo configurado: ${minUnits}).`,
         actionLabel: 'Revisar inventario',
         actionUrl: `${safeBaseUrl}${sectionPath('inventory')}`,
         dueText: 'Atender hoy para evitar quiebre de stock.',
+        nextSteps: [
+          `Generar requisicion por ${suggestedOrderQty} unidades del producto.`,
+          'Validar stock fisico en bodega (Sala de maquinas - Rack A2).',
+          'Confirmar fecha de entrega con proveedor antes de cerrar jornada.',
+        ],
         highlights: [
-          { label: 'Repuesto', value: 'Filtro de aceite principal' },
-          { label: 'Stock actual', value: '2 unidades' },
-          { label: 'Stock minimo', value: '5 unidades' },
+          { label: 'Producto', value: productName },
+          { label: 'Unidades disponibles', value: `${currentUnits}` },
+          { label: 'Minimo configurado', value: `${minUnits}` },
+          { label: 'Ubicacion', value: 'Sala de maquinas - Rack A2' },
         ],
       };
     }
 
     if (scenario === 'maintenance_due_this_week') {
+      const taskName = 'Revision del sistema de enfriamiento del motor principal';
+
       return {
         moduleLabel: 'Mantenimiento',
         type: 'maintenance.due_soon',
         severity: 'warn',
         title: `Mantenimiento programado esta semana - ${yachtName}`,
-        message: 'La tarea "Revision del sistema de enfriamiento del motor principal" vence esta semana.',
+        message: `La tarea "${taskName}" vence esta semana y debe ejecutarse segun plan de mantenimiento.`,
         actionLabel: 'Ver mantenimiento',
         actionUrl: `${safeBaseUrl}${sectionPath('maintenance')}`,
         dueText: 'Vence en 3 dias.',
+        nextSteps: [
+          'Confirmar repuestos y herramientas requeridas.',
+          'Asignar tecnico y bloquear ventana operativa en calendario.',
+          'Registrar evidencia al completar la tarea.',
+        ],
         highlights: [
-          { label: 'Tarea', value: 'Revision del sistema de enfriamiento del motor principal' },
+          { label: 'Mantenimiento', value: taskName },
           { label: 'Prioridad', value: 'Alta' },
-          { label: 'Vencimiento', value: 'Esta semana' },
+          { label: 'Frecuencia', value: 'Semanal' },
+          { label: 'Vencimiento', value: 'Esta semana (3 dias)' },
         ],
       };
     }
 
     if (scenario === 'documents_renewal_due') {
+      const documentName = 'Certificado de navegacion';
+
       return {
         moduleLabel: 'Documentos',
         type: 'documents.expiring',
         severity: 'critical',
         title: `Renovacion documental cercana - ${yachtName}`,
-        message: 'El certificado de navegacion vence pronto y requiere iniciar la renovacion.',
+        message: `El documento "${documentName}" vence pronto y requiere iniciar la renovacion.`,
         actionLabel: 'Ir a documentos',
         actionUrl: `${safeBaseUrl}${sectionPath('documents')}`,
         dueText: 'Vence en 7 dias.',
+        nextSteps: [
+          'Iniciar renovacion y cargar formulario de solicitud.',
+          'Adjuntar soporte actualizado y validar vigencia.',
+          'Confirmar fecha de entrega con la autoridad maritima.',
+        ],
         highlights: [
-          { label: 'Documento', value: 'Certificado de navegacion' },
+          { label: 'Documento', value: documentName },
+          { label: 'Numero', value: 'NAV-EC-2026-014' },
+          { label: 'Fecha de vencimiento', value: 'En 7 dias' },
           { label: 'Estado', value: 'Por vencer' },
           { label: 'Accion', value: 'Iniciar renovacion' },
         ],
@@ -1456,61 +1486,60 @@ export class NotificationsService {
     }
 
     if (scenario === 'purchase_order_pending') {
+      const orderNumber = 'PO-2026-0042';
+
       return {
         moduleLabel: 'Ordenes de compra',
         type: 'po.submitted',
         severity: 'info',
         title: `Orden de compra pendiente de aprobacion - ${yachtName}`,
-        message: 'La orden PO-2026-0042 fue enviada y esta pendiente de aprobacion.',
+        message: `La orden ${orderNumber} fue enviada y esta pendiente de aprobacion.`,
         actionLabel: 'Revisar ordenes',
         actionUrl: `${safeBaseUrl}${sectionPath('purchase-orders')}`,
         dueText: 'Pendiente de aprobacion desde hoy.',
+        nextSteps: [
+          'Revisar cotizacion y prioridad operativa de la orden.',
+          'Aprobar o rechazar con observacion para compras.',
+          'Notificar al solicitante una vez resuelta la orden.',
+        ],
         highlights: [
-          { label: 'PO', value: 'PO-2026-0042' },
+          { label: 'Orden de compra', value: orderNumber },
           { label: 'Proveedor', value: 'Marine Parts Supply' },
+          { label: 'Concepto', value: 'Repuestos de motor principal' },
           { label: 'Monto', value: 'USD 3,240' },
         ],
       };
     }
 
+    const engineName = 'Motor principal #1';
     return {
       moduleLabel: 'Motores',
       type: 'maintenance.due_soon',
       severity: 'warn',
       title: `Revision de motores programada - ${yachtName}`,
-      message: 'Se recomienda ejecutar revision preventiva del motor principal esta semana.',
+      message: `Se recomienda ejecutar la revision preventiva de ${engineName} esta semana.`,
       actionLabel: 'Ir a motores',
       actionUrl: `${safeBaseUrl}${sectionPath('engines')}`,
       dueText: 'Recomendado dentro de los proximos 5 dias.',
+      nextSteps: [
+        'Programar revision preventiva del motor en ventana segura.',
+        'Preparar checklist tecnico y repuestos criticos.',
+        'Actualizar horas de motor y cerrar actividad en bitacora.',
+      ],
       highlights: [
-        { label: 'Motor', value: 'Principal #1' },
+        { label: 'Motor', value: engineName },
+        { label: 'Horas actuales', value: '1,248 h' },
+        { label: 'Proximo servicio', value: '1,250 h' },
         { label: 'Ultima revision', value: 'Hace 28 dias' },
-        { label: 'Proxima revision', value: 'Esta semana' },
       ],
     };
   }
 
   private attachResponsibleToScenario(
     details: EmailScenarioDetails,
-    responsible: ResponsibleContact | null,
+    _responsible: ResponsibleContact | null,
   ): EmailScenarioDetails {
-    if (!responsible) return details;
-
-    const responsibleText = `${responsible.fullName} (${responsible.role})`;
-    const nextHighlights = [
-      { label: 'Responsable', value: responsibleText },
-      ...details.highlights,
-    ];
-
-    if (responsible.email) {
-      nextHighlights.splice(1, 0, { label: 'Correo responsable', value: responsible.email });
-    }
-
-    return {
-      ...details,
-      message: `${details.message} Responsable asignado: ${responsibleText}.`,
-      highlights: nextHighlights,
-    };
+    return details;
   }
 
   private async resolveScenarioResponsible(input: {
@@ -1714,6 +1743,12 @@ export class NotificationsService {
         : input.details.severity === 'warn'
           ? '#f59e0b'
           : '#38bdf8';
+    const severityLabel =
+      input.details.severity === 'critical'
+        ? 'Critica'
+        : input.details.severity === 'warn'
+          ? 'Atencion'
+          : 'Informativa';
 
     const highlightsHtml = input.details.highlights
       .map(
@@ -1721,6 +1756,18 @@ export class NotificationsService {
           <tr>
             <td style="padding:6px 0;color:#94a3b8;font-size:13px;">${this.escapeHtml(item.label)}</td>
             <td style="padding:6px 0;color:#e2e8f0;font-size:13px;text-align:right;">${this.escapeHtml(item.value)}</td>
+          </tr>
+        `,
+      )
+      .join('');
+    const nextStepsHtml = input.details.nextSteps
+      .map(
+        (step, index) => `
+          <tr>
+            <td style="padding:6px 0;color:#e2e8f0;font-size:13px;line-height:1.5;">
+              <span style="display:inline-block;min-width:18px;color:#93c5fd;font-weight:700;">${index + 1}.</span>
+              ${this.escapeHtml(step)}
+            </td>
           </tr>
         `,
       )
@@ -1761,7 +1808,7 @@ export class NotificationsService {
           <tr>
             <td style="padding:20px 24px;">
               <div style="display:inline-block;background:${severityColor};color:#0b1220;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:uppercase;">
-                ${this.escapeHtml(input.details.severity)}
+                ${this.escapeHtml(severityLabel)}
               </div>
               <h1 style="margin:14px 0 6px 0;color:#f8fafc;font-size:22px;line-height:1.3;">${this.escapeHtml(input.details.title)}</h1>
               <p style="margin:0 0 16px 0;color:#cbd5e1;font-size:14px;line-height:1.6;">
@@ -1783,6 +1830,13 @@ export class NotificationsService {
                 </tr>
                 ${responsibleHtml}
                 ${highlightsHtml}
+              </table>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;background:#111827;border:1px solid #1e293b;border-radius:10px;padding:14px;">
+                <tr>
+                  <td style="color:#f8fafc;font-size:13px;font-weight:700;padding-bottom:6px;">Que debes hacer ahora</td>
+                </tr>
+                ${nextStepsHtml}
               </table>
 
               <div style="margin-top:18px;">
