@@ -1,9 +1,15 @@
 import { Body, Controller, Post, Res, Get, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
 import { Response, Request, CookieOptions } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto';
+import { LoginDto, RefreshDto } from './dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { PrismaService } from '../prisma.service';
+
+type AuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+};
 
 @Controller('auth')
 export class AuthController {
@@ -11,6 +17,53 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly prisma: PrismaService
   ) {}
+
+  private getCookieContext() {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
+    const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
+    const sameSite: CookieOptions['sameSite'] = isProduction ? 'none' : 'lax';
+    const baseCookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite,
+      path: '/',
+      ...domainOption,
+    };
+
+    return { domainOption, baseCookieOptions };
+  }
+
+  private clearAuthCookies(response: Response) {
+    const { domainOption } = this.getCookieContext();
+    response.clearCookie('accessToken', { path: '/', ...domainOption });
+    response.clearCookie('refreshToken', { path: '/', ...domainOption });
+  }
+
+  private setAuthCookies(response: Response, tokens: AuthTokens) {
+    const { baseCookieOptions } = this.getCookieContext();
+
+    response.cookie('accessToken', tokens.accessToken, {
+      ...baseCookieOptions,
+      maxAge: 15 * 60 * 1000,
+    });
+
+    response.cookie('refreshToken', tokens.refreshToken, {
+      ...baseCookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  private buildMobileAuthResponse(tokens: AuthTokens) {
+    return {
+      success: true,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      tokenType: tokens.tokenType,
+      accessTokenExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+      refreshTokenExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+    };
+  }
 
   @Get('debug/cookies')
   debugCookies(@Req() req: Request) {
@@ -32,32 +85,16 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const tokens = await this.authService.loginWithEmail(body.email, body.password);
-    const isProduction = process.env.NODE_ENV === 'production';
-    const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
-    const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
-    const sameSite: CookieOptions['sameSite'] = isProduction ? 'none' : 'lax';
-    const baseCookieOptions: CookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite,
-      path: '/',
-      ...domainOption,
-    };
-
-    response.clearCookie('accessToken', { path: '/', ...domainOption });
-    response.clearCookie('refreshToken', { path: '/', ...domainOption });
-
-    response.cookie('accessToken', tokens.accessToken, {
-      ...baseCookieOptions,
-      maxAge: 15 * 60 * 1000,
-    });
-
-    response.cookie('refreshToken', tokens.refreshToken, {
-      ...baseCookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    this.clearAuthCookies(response);
+    this.setAuthCookies(response, tokens);
 
     return { success: true };
+  }
+
+  @Post('mobile/login')
+  async mobileLogin(@Body() body: LoginDto) {
+    const tokens = await this.authService.loginWithEmail(body.email, body.password);
+    return this.buildMobileAuthResponse(tokens);
   }
 
   @Get('me')
@@ -97,29 +134,17 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Res({ passthrough: true }) response: Response) {
-    const isProduction = process.env.NODE_ENV === 'production';
-    const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
-    const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
+    this.clearAuthCookies(response);
+    return { success: true };
+  }
 
-    response.clearCookie('accessToken', { path: '/', ...domainOption });
-    response.clearCookie('refreshToken', { path: '/', ...domainOption });
+  @Post('mobile/logout')
+  async mobileLogout() {
     return { success: true };
   }
 
   @Post('refresh')
   async refresh(@Req() req: Request, @Res() res: Response) {
-    const isProduction = process.env.NODE_ENV === 'production';
-    const cookieDomain = process.env.COOKIE_DOMAIN?.trim();
-    const domainOption = isProduction && cookieDomain ? { domain: cookieDomain } : {};
-    const sameSite: CookieOptions['sameSite'] = isProduction ? 'none' : 'lax';
-    const baseCookieOptions: CookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite,
-      path: '/',
-      ...domainOption,
-    };
-
     try {
       const refreshToken = req.cookies?.refreshToken;
 
@@ -129,20 +154,21 @@ export class AuthController {
 
       const tokens = await this.authService.refresh(refreshToken);
 
-      res.cookie('accessToken', tokens.accessToken, {
-        ...baseCookieOptions,
-        maxAge: 15 * 60 * 1000,
-      });
-
-      res.cookie('refreshToken', tokens.refreshToken, {
-        ...baseCookieOptions,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      this.setAuthCookies(res, tokens);
 
       return res.json({ success: true });
     } catch (error) {
-      res.clearCookie('accessToken', { path: '/', ...domainOption });
-      res.clearCookie('refreshToken', { path: '/', ...domainOption });
+      this.clearAuthCookies(res);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  @Post('mobile/refresh')
+  async mobileRefresh(@Body() body: RefreshDto) {
+    try {
+      const tokens = await this.authService.refresh(body.refreshToken);
+      return this.buildMobileAuthResponse(tokens);
+    } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }

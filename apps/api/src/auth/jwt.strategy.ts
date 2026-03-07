@@ -19,11 +19,18 @@ const cookieExtractor = (req: Request): string | null => {
   return token;
 };
 
+const bearerExtractor = ExtractJwt.fromAuthHeaderAsBearerToken();
+
+const authExtractor = ExtractJwt.fromExtractors([
+  (req: Request) => bearerExtractor(req),
+  cookieExtractor,
+]);
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(configService: ConfigService) {
     super({
-      jwtFromRequest: cookieExtractor,
+      jwtFromRequest: authExtractor,
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_ACCESS_SECRET') || 'change_me_access',
     });
