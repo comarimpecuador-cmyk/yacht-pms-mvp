@@ -18,3 +18,23 @@ apps/mobile/ios
 captain-token*.json
 cookies*.txt
 cookies*.json
+
+# Expo / Metro
+apps/mobile/.expo-shared
+apps/mobile/.expo-export-check
+apps/mobile/.metro-cache
+apps/mobile/web-build
+
+# Build artifacts
+build
+out
+
+# OS / editor
+Thumbs.db
+.vscode
+.idea
+
+# Temporary
+tmp
+temp
+.cache
