@@ -2,16 +2,19 @@
   "name": "@yacht-pms/mobile",
   "version": "0.0.1",
   "private": true,
+  "main": "index.js",
   "scripts": {
     "dev": "expo start",
     "build": "echo 'Expo build handled by EAS'",
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.6",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
     "@tanstack/react-query": "^5.17.9",
     "axios": "^1.6.5",
+    "babel-preset-expo": "~11.0.15",
     "expo": "^51.0.28",
     "expo-secure-store": "~13.0.2",
     "expo-sqlite": "^14.0.6",
